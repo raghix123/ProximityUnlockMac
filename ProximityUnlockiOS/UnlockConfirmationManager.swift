@@ -40,7 +40,8 @@ class UnlockConfirmationManager: ObservableObject {
 
     // MARK: - Request Handling
 
-    private func handleUnlockRequest() {
+    /// Handles an unlock request arriving via BLE or MPC.
+    func receiveUnlockRequest() {
         if !requiresConfirmation {
             approve()
             return
@@ -49,11 +50,15 @@ class UnlockConfirmationManager: ObservableObject {
         scheduleUnlockNotification()
     }
 
-    private func handleLockEvent() {
+    /// Handles a lock event arriving via BLE or MPC.
+    func receiveLockEvent() {
         pendingRequest = false
         notificationCenter.removePendingNotificationRequests(withIdentifiers: [confirmNotificationId])
         notificationCenter.removeDeliveredNotifications(withIdentifiers: [confirmNotificationId])
     }
+
+    private func handleUnlockRequest() { receiveUnlockRequest() }
+    private func handleLockEvent()     { receiveLockEvent() }
 
     // MARK: - Confirmation Actions
 

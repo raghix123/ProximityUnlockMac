@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>ProximityUnlock uses Bluetooth to advertise your iPhone's presence so your Mac can detect when you're nearby and unlock automatically.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>ProximityUnlock uses the local network to maintain a reliable connection with your Mac for proximity unlocking.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_prox-unlock._tcp</string>
+		<string>_prox-unlock._udp</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-peripheral</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+	</array>
+</dict>
+</plist>
