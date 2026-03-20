@@ -31,6 +31,10 @@ class ProximityAdvertiser: ObservableObject {
     let bleManager: BLEPeripheralManager
     let confirmationManager: UnlockConfirmationManager
 
+    /// MultipeerConnectivity channel — uses WiFi Direct / WiFi / Bluetooth automatically,
+    /// giving much more reliable message delivery than raw BLE GATT.
+    let multipeerManager = MultipeerManager()
+
     // MARK: - Init
 
     init() {
@@ -52,12 +56,29 @@ class ProximityAdvertiser: ObservableObject {
 
         // Request notification permission on first launch
         confirmationManager.requestNotificationPermission()
+
+        // Wire MPC commands to the same handlers as BLE — whichever channel wins first.
+        multipeerManager.onUnlockRequest = { [weak self] in
+            Task { @MainActor [weak self] in self?.confirmationManager.receiveUnlockRequest() }
+        }
+        multipeerManager.onLockEvent = { [weak self] in
+            Task { @MainActor [weak self] in self?.confirmationManager.receiveLockEvent() }
+        }
     }
 
     // MARK: - Public API
 
-    func approve() { confirmationManager.approve() }
-    func deny()    { confirmationManager.deny() }
+    /// Sends approval via both BLE and MPC so the Mac receives it on whichever channel
+    /// responds first.
+    func approve() {
+        confirmationManager.approve()               // sends via BLE
+        multipeerManager.sendConfirmation(approved: true)   // also via MPC
+    }
+
+    func deny() {
+        confirmationManager.deny()                  // sends via BLE
+        multipeerManager.sendConfirmation(approved: false)  // also via MPC
+    }
 
     var bluetoothStatusDescription: String {
         switch bluetoothState {

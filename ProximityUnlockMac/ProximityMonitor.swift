@@ -30,6 +30,10 @@ class ProximityMonitor: ObservableObject {
     private(set) var bleManager: (any BLECentralManaging)!
     private let unlockManager: any UnlockManaging
 
+    /// MultipeerConnectivity channel — uses WiFi Direct / WiFi / Bluetooth automatically,
+    /// giving much more reliable message delivery than raw BLE GATT writes.
+    let multipeerManager = MultipeerManager()
+
     // Hysteresis and confirmation timeout — injectable for fast tests.
     let hysteresisSeconds: TimeInterval
     let confirmationTimeout: TimeInterval
@@ -74,6 +78,10 @@ class ProximityMonitor: ObservableObject {
                 Task { @MainActor [weak self] in self?.handleConfirmationResponse(approved) }
             }
         )
+        // Wire MPC confirmations — same handler, deduplication is handled by isScreenLocked().
+        multipeerManager.onConfirmationReceived = { [weak self] approved in
+            Task { @MainActor [weak self] in self?.handleConfirmationResponse(approved) }
+        }
     }
 
     /// Testable designated init — all dependencies injectable.
@@ -162,7 +170,7 @@ class ProximityMonitor: ObservableObject {
         cancelConfirmationWait()
         guard isEnabled else { return }
         proximityState = .far
-        bleManager?.writeCommand("lock_event")
+        sendCommand("lock_event")
         if UserDefaults.standard.bool(forKey: "lockWhenFar") {
             unlockManager.lockScreen()
         }
@@ -173,7 +181,7 @@ class ProximityMonitor: ObservableObject {
     private func requestUnlockConfirmation() {
         guard !awaitingConfirmation else { return }
         awaitingConfirmation = true
-        bleManager?.writeCommand("unlock_request")
+        sendCommand("unlock_request")
 
         confirmationTimer = Timer.scheduledTimer(
             withTimeInterval: confirmationTimeout,
@@ -196,5 +204,16 @@ class ProximityMonitor: ObservableObject {
         nearTimer = nil
         farTimer?.invalidate()
         farTimer = nil
+    }
+
+    // MARK: - Dual-Channel Command Sending
+
+    /// Sends a command via MPC when connected (more reliable), falling back to BLE GATT.
+    /// Both channels are tried when both are available so the message gets through either way.
+    private func sendCommand(_ command: String) {
+        let sentViaMPC = multipeerManager.sendCommand(command)
+        if !sentViaMPC {
+            bleManager?.writeCommand(command)
+        }
     }
 }
