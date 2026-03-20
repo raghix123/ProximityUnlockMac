@@ -4,12 +4,16 @@ import SwiftUI
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
-    var proximityMonitor: ProximityMonitor!
+    var proximityMonitor: ProximityMonitor
     private var cancellable: AnyCancellable?
+
+    override init() {
+        self.proximityMonitor = ProximityMonitor()
+        super.init()
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
-        proximityMonitor = ProximityMonitor()
         setupStatusBar()
 
         cancellable = proximityMonitor.objectWillChange.sink { [weak self] in
