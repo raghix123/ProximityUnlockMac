@@ -8,6 +8,7 @@
 
 /* Begin PBXFileReference section */
 		A00341602F3C036300FCE096 /* ProximityUnlockMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ProximityUnlockMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0B4BA11EA3924C398F1C551F /* ProximityUnlockiOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ProximityUnlockiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -16,10 +17,22 @@
 			path = ProximityUnlockMac;
 			sourceTree = "<group>";
 		};
+		A3B013A144774FC2BBF418B3 /* ProximityUnlockiOS */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ProximityUnlockiOS;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A003415D2F3C036300FCE096 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BD425E82E25F47DEB17D77F1 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,6 +46,7 @@
 			isa = PBXGroup;
 			children = (
 				A00341622F3C036300FCE096 /* ProximityUnlockMac */,
+				A3B013A144774FC2BBF418B3 /* ProximityUnlockiOS */,
 				A00341612F3C036300FCE096 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +55,7 @@
 			isa = PBXGroup;
 			children = (
 				A00341602F3C036300FCE096 /* ProximityUnlockMac.app */,
+				0B4BA11EA3924C398F1C551F /* ProximityUnlockiOS.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -68,6 +83,28 @@
 			);
 			productName = ProximityUnlockMac;
 			productReference = A00341602F3C036300FCE096 /* ProximityUnlockMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E390C7C85A23428EA8628AF2 /* ProximityUnlockiOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 64722CB32CC3405D88976557 /* Build configuration list for PBXNativeTarget "ProximityUnlockiOS" */;
+			buildPhases = (
+				AFF10E3CECE5446A81114A0D /* Sources */,
+				BD425E82E25F47DEB17D77F1 /* Frameworks */,
+				A771E2FD38064161AB584E6E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A3B013A144774FC2BBF418B3 /* ProximityUnlockiOS */,
+			);
+			name = ProximityUnlockiOS;
+			packageProductDependencies = (
+			);
+			productName = ProximityUnlockiOS;
+			productReference = 0B4BA11EA3924C398F1C551F /* ProximityUnlockiOS.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -100,6 +137,7 @@
 			projectRoot = "";
 			targets = (
 				A003415F2F3C036300FCE096 /* ProximityUnlockMac */,
+				E390C7C85A23428EA8628AF2 /* ProximityUnlockiOS */,
 			);
 		};
 /* End PBXProject section */
@@ -112,10 +150,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A771E2FD38064161AB584E6E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A003415C2F3C036300FCE096 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AFF10E3CECE5446A81114A0D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -311,6 +363,63 @@
 		};
 /* End XCBuildConfiguration section */
 
+
+		FEE0C02BE186467B88CA39C1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ProximityUnlockiOS/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.raghav.ProximityUnlock.ProximityUnlockiOS;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		C1688F8DB35E4D8294115EC2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ProximityUnlockiOS/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.raghav.ProximityUnlock.ProximityUnlockiOS;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* Begin XCConfigurationList section */
 		A003415B2F3C036300FCE096 /* Build configuration list for PBXProject "ProximityUnlockMac" */ = {
 			isa = XCConfigurationList;
@@ -326,6 +435,15 @@
 			buildConfigurations = (
 				A003416C2F3C036400FCE096 /* Debug */,
 				A003416D2F3C036400FCE096 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		64722CB32CC3405D88976557 /* Build configuration list for PBXNativeTarget "ProximityUnlockiOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FEE0C02BE186467B88CA39C1 /* Debug */,
+				C1688F8DB35E4D8294115EC2 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

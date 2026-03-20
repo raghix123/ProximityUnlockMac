@@ -30,6 +30,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let symbolName: String
         if !proximityMonitor.isEnabled {
             symbolName = "iphone.slash"
+        } else if proximityMonitor.awaitingConfirmation {
+            symbolName = "iphone.and.arrow.forward"
         } else {
             switch proximityMonitor.proximityState {
             case .near:    symbolName = "lock.open.iphone"

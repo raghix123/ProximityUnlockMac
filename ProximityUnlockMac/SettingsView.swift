@@ -31,10 +31,19 @@ struct SettingsView: View {
             // MARK: General
             Section("General") {
                 Toggle("Enable Proximity Unlock", isOn: $monitor.isEnabled)
+                Toggle("Require iPhone confirmation to unlock", isOn: $monitor.requireConfirmation)
                 Toggle("Lock screen when iPhone moves away", isOn: $lockWhenFar)
                     .onChange(of: lockWhenFar) { _, new in
                         UserDefaults.standard.set(new, forKey: "lockWhenFar")
                     }
+            }
+
+            // MARK: Confirmation status
+            if monitor.awaitingConfirmation {
+                Section {
+                    Label("Waiting for iPhone to confirm unlock...", systemImage: "iphone.and.arrow.forward")
+                        .foregroundStyle(.orange)
+                }
             }
 
             // MARK: Sensitivity
