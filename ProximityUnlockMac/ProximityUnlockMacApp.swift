@@ -1,17 +1,13 @@
-//
-//  ProximityUnlockMacApp.swift
-//  ProximityUnlockMac
-//
-//  Created by Raghav Bodicherla on 2/10/26.
-//
-
 import SwiftUI
 
 @main
 struct ProximityUnlockMacApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        Settings {
+            SettingsView()
+                .environmentObject(appDelegate.proximityMonitor)
         }
     }
 }
