@@ -74,6 +74,9 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
             }
             .navigationTitle("ProximityUnlock")
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
         }
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
     }
 }

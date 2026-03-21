@@ -89,7 +89,7 @@ class ProximityMonitor: ObservableObject {
     init(
         bleManager: (any BLECentralManaging)? = nil,
         unlockManager: any UnlockManaging,
-        hysteresisSeconds: TimeInterval = 3.0,
+        hysteresisSeconds: TimeInterval = 1.5,
         confirmationTimeout: TimeInterval = 15.0
     ) {
         self.unlockManager      = unlockManager

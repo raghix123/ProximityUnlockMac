@@ -12,9 +12,16 @@ struct ProximityUnlockiOSApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(advertiser)
+                .background(Color(.systemGroupedBackground).ignoresSafeArea())
                 .onAppear {
                     // Pass advertiser to AppDelegate so notification responses can call confirm/deny
                     appDelegate.advertiser = advertiser
+                    // Make the window background match the grouped list background so the
+                    // status-bar and home-indicator regions don't show as black bars.
+                    UIApplication.shared.connectedScenes
+                        .compactMap { $0 as? UIWindowScene }
+                        .flatMap { $0.windows }
+                        .forEach { $0.backgroundColor = UIColor.systemGroupedBackground }
                 }
         }
     }

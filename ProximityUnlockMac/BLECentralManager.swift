@@ -85,15 +85,17 @@ class BLECentralManager: NSObject, BLECentralManaging {
 
     private func startScanning() {
         guard central.state == .poweredOn else { return }
+        // allowDuplicates: true → every advertisement packet fires didDiscover with fresh RSSI,
+        // giving sub-second proximity readings without waiting for a connected poll cycle.
         central.scanForPeripherals(
             withServices: [BLEConstants.serviceUUID],
-            options: [CBCentralManagerScanOptionAllowDuplicatesKey: false]
+            options: [CBCentralManagerScanOptionAllowDuplicatesKey: true]
         )
     }
 
     private func startRSSIPolling() {
         rssiTimer?.invalidate()
-        rssiTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+        rssiTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             self?.peripheral?.readRSSI()
         }
         peripheral?.readRSSI()
@@ -164,12 +166,20 @@ extension BLECentralManager: CBCentralManagerDelegate {
         advertisementData: [String: Any],
         rssi RSSI: NSNumber
     ) {
-        guard self.peripheral == nil else { return }
-        self.peripheral = peripheral
-        self.peripheral?.delegate = self
-        self.central.stopScan()
-        self.central.connect(peripheral, options: nil)
-        onDeviceFound()
+        let rssiValue = RSSI.intValue
+        // Ignore implausible readings (0 or positive means the API couldn't measure).
+        guard rssiValue < 0 else { return }
+
+        if self.peripheral == nil {
+            // First discovery — stop scan, connect so we can send commands.
+            self.peripheral = peripheral
+            self.peripheral?.delegate = self
+            self.central.stopScan()
+            self.central.connect(peripheral, options: nil)
+            onDeviceFound()
+        }
+        // Feed the advertisement RSSI immediately — much faster than waiting for readRSSI().
+        onRSSIUpdate(rssiValue)
     }
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
