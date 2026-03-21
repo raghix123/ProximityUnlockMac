@@ -24,7 +24,7 @@ struct StatusView: View {
                     .foregroundStyle(indicatorColor)
             }
             .onAppear { pulsing = advertiser.isAdvertising }
-            .onChange(of: advertiser.isAdvertising) { _, advertising in
+            .onChange(of: advertiser.isAdvertising) { advertising in
                 pulsing = advertising
             }
 

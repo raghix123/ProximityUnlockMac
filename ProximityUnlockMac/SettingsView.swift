@@ -33,7 +33,7 @@ struct SettingsView: View {
                 Toggle("Enable Proximity Unlock", isOn: $monitor.isEnabled)
                 Toggle("Require iPhone confirmation to unlock", isOn: $monitor.requireConfirmation)
                 Toggle("Lock screen when iPhone moves away", isOn: $lockWhenFar)
-                    .onChange(of: lockWhenFar) { _, new in
+                    .onChange(of: lockWhenFar) { new in
                         UserDefaults.standard.set(new, forKey: "lockWhenFar")
                     }
             }

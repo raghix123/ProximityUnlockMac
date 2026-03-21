@@ -147,7 +147,7 @@ extension BLEPeripheralManager: CBPeripheralManagerDelegate {
         for request in requests {
             guard let data = request.value,
                   let message = String(data: data, encoding: .utf8) else {
-                peripheral.respond(to: request, withResult: .invalidAttributeLength)
+                peripheral.respond(to: request, withResult: .invalidAttributeValueLength)
                 continue
             }
 
@@ -159,3 +159,4 @@ extension BLEPeripheralManager: CBPeripheralManagerDelegate {
         }
     }
 }
+

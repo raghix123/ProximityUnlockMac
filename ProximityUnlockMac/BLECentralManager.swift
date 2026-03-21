@@ -1,5 +1,6 @@
 import CoreBluetooth
 import Foundation
+import AppKit
 
 /// The service UUID that the iPhone app will advertise.
 /// Both the Mac and iPhone apps must use this exact UUID.
