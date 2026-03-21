@@ -1,12 +1,3 @@
-import SwiftUI
-
-@main
-struct ProximityUnlockMacApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-
-    // Settings window is managed directly by AppDelegate using NSHostingView
-    // to avoid the deprecated showSettingsWindow: action on macOS 26+.
-    var body: some Scene {
-        Settings { EmptyView() }
-    }
-}
+// App entry point is in main.swift.
+// This file is intentionally empty — the SwiftUI App lifecycle is not used.
+// The app is a pure AppKit menu bar app managed by AppDelegate.
