@@ -14,15 +14,15 @@ class ProximityMonitor: ObservableObject {
     @Published var isEnabled: Bool = true {
         didSet { UserDefaults.standard.set(isEnabled, forKey: "isEnabled") }
     }
-    @Published var requireConfirmation: Bool = true {
+    @Published var requireConfirmation: Bool = false {
         didSet { UserDefaults.standard.set(requireConfirmation, forKey: "requireConfirmation") }
     }
     @Published var awaitingConfirmation: Bool = false
 
-    @Published var nearThreshold: Int = -70 {
+    @Published var nearThreshold: Int = -75 {
         didSet { UserDefaults.standard.set(nearThreshold, forKey: "nearThreshold") }
     }
-    @Published var farThreshold: Int = -85 {
+    @Published var farThreshold: Int = -90 {
         didSet { UserDefaults.standard.set(farThreshold, forKey: "farThreshold") }
     }
 
@@ -89,7 +89,7 @@ class ProximityMonitor: ObservableObject {
     init(
         bleManager: (any BLECentralManaging)? = nil,
         unlockManager: any UnlockManaging,
-        hysteresisSeconds: TimeInterval = 5.0,
+        hysteresisSeconds: TimeInterval = 3.0,
         confirmationTimeout: TimeInterval = 15.0
     ) {
         self.unlockManager      = unlockManager

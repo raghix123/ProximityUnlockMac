@@ -1,18 +1,17 @@
-import SwiftUI
 import CoreBluetooth
+import SwiftUI
 
 struct StatusView: View {
     @EnvironmentObject var advertiser: ProximityAdvertiser
     @State private var pulsing = false
 
     var body: some View {
-        VStack(spacing: 24) {
-            // Animated status indicator
+        VStack(spacing: 20) {
             ZStack {
                 Circle()
                     .fill(indicatorColor.opacity(0.15))
-                    .frame(width: 120, height: 120)
-                    .scaleEffect(pulsing ? 1.3 : 1.0)
+                    .frame(width: 110, height: 110)
+                    .scaleEffect(pulsing ? 1.25 : 1.0)
                     .animation(
                         advertiser.isAdvertising
                             ? .easeInOut(duration: 1.2).repeatForever(autoreverses: true)
@@ -21,7 +20,7 @@ struct StatusView: View {
                     )
 
                 Image(systemName: indicatorIcon)
-                    .font(.system(size: 48))
+                    .font(.system(size: 44))
                     .foregroundStyle(indicatorColor)
             }
             .onAppear { pulsing = advertiser.isAdvertising }
@@ -29,20 +28,18 @@ struct StatusView: View {
                 pulsing = advertising
             }
 
-            // Status text
-            VStack(spacing: 6) {
+            VStack(spacing: 4) {
                 Text(advertiser.bluetoothStatusDescription)
                     .font(.title3.weight(.semibold))
                 if advertiser.isConnected {
-                    Label("Mac detected your iPhone", systemImage: "checkmark.circle.fill")
+                    Label("Mac connected", systemImage: "checkmark.circle.fill")
                         .font(.subheadline)
                         .foregroundStyle(.green)
                 }
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 40)
-        .background(.background)
+        .padding(.vertical, 32)
     }
 
     private var indicatorColor: Color {
@@ -59,8 +56,7 @@ struct StatusView: View {
     private var indicatorIcon: String {
         switch advertiser.bluetoothState {
         case .poweredOn:
-            if advertiser.isConnected { return "iphone.and.arrow.forward" }
-            return "iphone.radiowaves.left.and.right"
+            return advertiser.isConnected ? "iphone.and.arrow.forward" : "iphone.radiowaves.left.and.right"
         case .poweredOff:
             return "iphone.slash"
         case .unauthorized:

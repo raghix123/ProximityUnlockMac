@@ -23,6 +23,8 @@ class BLECentralManager: NSObject, BLECentralManaging {
     private var requestChar: CBCharacteristic?
     /// Characteristic used to receive confirm/deny responses from the iPhone.
     private var confirmChar: CBCharacteristic?
+    /// Command queued before characteristics were discovered.
+    private var pendingCommand: String?
 
     // MARK: - BLECentralManaging
 
@@ -33,7 +35,6 @@ class BLECentralManager: NSObject, BLECentralManaging {
 
     // MARK: - Init
 
-    /// Production init: creates a real CBCentralManager.
     convenience init(
         onRSSIUpdate:           @escaping (Int) -> Void,
         onDeviceFound:          @escaping () -> Void,
@@ -41,7 +42,7 @@ class BLECentralManager: NSObject, BLECentralManaging {
         onConfirmationReceived: @escaping (Bool) -> Void
     ) {
         self.init(
-            centralManager: nil,   // will be created inside designated init
+            centralManager: nil,
             onRSSIUpdate: onRSSIUpdate,
             onDeviceFound: onDeviceFound,
             onDeviceLost: onDeviceLost,
@@ -49,7 +50,6 @@ class BLECentralManager: NSObject, BLECentralManaging {
         )
     }
 
-    /// Designated init: accepts an injectable CBCentralManagerProtocol (real or mock).
     init(
         centralManager: CBCentralManagerProtocol?,
         onRSSIUpdate:           @escaping (Int) -> Void,
@@ -62,11 +62,21 @@ class BLECentralManager: NSObject, BLECentralManaging {
         self.onDeviceLost           = onDeviceLost
         self.onConfirmationReceived = onConfirmationReceived
         super.init()
-        // If no mock provided, create the real CBCentralManager on the main queue.
+
         if let existing = centralManager {
             self.central = existing
         } else {
             self.central = CBCentralManager(delegate: self, queue: nil)
+        }
+
+        // When the Mac wakes from sleep, cancel any stale BLE connection and
+        // restart scanning so both sides re-sync their connection state.
+        NotificationCenter.default.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.handleWakeFromSleep()
         }
     }
 
@@ -97,16 +107,32 @@ class BLECentralManager: NSObject, BLECentralManaging {
 
     private func resetLostTimer() {
         lostTimer?.invalidate()
+        // No RSSI update for 10 s → treat connection as lost.
         lostTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: false) { [weak self] _ in
             guard let self, let p = self.peripheral else { return }
             self.central.cancelPeripheralConnection(p)
         }
     }
 
+    private func handleWakeFromSleep() {
+        // Cancel any stale peripheral connection; didDisconnectPeripheral will fire,
+        // reset state, and restart scanning automatically.
+        if let p = peripheral {
+            central.cancelPeripheralConnection(p)
+        } else {
+            startScanning()
+        }
+    }
+
     // MARK: - Characteristics
 
     func writeCommand(_ command: String) {
-        guard let peripheral, let char = requestChar else { return }
+        guard let peripheral, let char = requestChar else {
+            // Characteristics not yet discovered — queue the command.
+            pendingCommand = command
+            return
+        }
+        pendingCommand = nil
         let data = Data(command.utf8)
         peripheral.writeValue(data, for: char, type: .withResponse)
     }
@@ -114,6 +140,11 @@ class BLECentralManager: NSObject, BLECentralManaging {
     private func subscribeToConfirmations() {
         guard let peripheral, let char = confirmChar else { return }
         peripheral.setNotifyValue(true, for: char)
+    }
+
+    private func flushPendingCommand() {
+        guard let command = pendingCommand else { return }
+        writeCommand(command)
     }
 }
 
@@ -153,6 +184,7 @@ extension BLECentralManager: CBCentralManagerDelegate {
         stopRSSIPolling()
         requestChar = nil
         confirmChar = nil
+        pendingCommand = nil
         self.peripheral = nil
         onDeviceLost()
         startScanning()
@@ -205,6 +237,8 @@ extension BLECentralManager: CBPeripheralDelegate {
                 break
             }
         }
+        // Send any command that arrived before characteristics were ready.
+        flushPendingCommand()
     }
 
     func peripheral(
@@ -218,8 +252,7 @@ extension BLECentralManager: CBPeripheralDelegate {
               let message = String(data: data, encoding: .utf8)
         else { return }
 
-        let approved = (message == "approved")
-        onConfirmationReceived(approved)
+        onConfirmationReceived(message == "approved")
     }
 
     func peripheral(
