@@ -6,6 +6,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     var proximityMonitor: ProximityMonitor
     private var cancellable: AnyCancellable?
+    private var settingsWindow: NSWindow?
 
     override init() {
         self.proximityMonitor = ProximityMonitor()
@@ -56,7 +57,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openSettings() {
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        if settingsWindow == nil {
+            let view = SettingsView().environmentObject(proximityMonitor)
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 440, height: 560),
+                styleMask: [.titled, .closable, .miniaturizable],
+                backing: .buffered,
+                defer: false
+            )
+            window.title = "ProximityUnlock Settings"
+            window.contentView = NSHostingView(rootView: view)
+            window.center()
+            window.isReleasedWhenClosed = false
+            settingsWindow = window
+        }
+        settingsWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 }
