@@ -126,7 +126,16 @@ struct SettingsView: View {
                     .foregroundStyle(isAccessibilityGranted ? .green : .red)
                     Spacer()
                     if !isAccessibilityGranted {
-                        Button("Grant Access") { requestAccessibility() }
+                        HStack(spacing: 8) {
+                            Button(action: { requestAccessibility() }) {
+                                Text("Grant Access")
+                            }
+                            Button(action: { isAccessibilityGranted = AXIsProcessTrusted() }) {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.caption)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                 }
                 Text("Accessibility is required for automatic password entry. Grant it in System Settings > Privacy & Security > Accessibility.")
