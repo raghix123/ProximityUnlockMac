@@ -38,6 +38,7 @@ class MultipeerManager: NSObject, ObservableObject {
 
     override init() {
         super.init()
+        Log.mpc.info("Initializing MPC with peer ID: \(self.myPeerID.displayName, privacy: .public)")
         session = MCSession(peer: myPeerID, securityIdentity: nil, encryptionPreference: .required)
         session.delegate = self
         browser = MCNearbyServiceBrowser(peer: myPeerID, serviceType: Self.serviceType)
@@ -52,9 +53,18 @@ class MultipeerManager: NSObject, ObservableObject {
     @discardableResult
     func sendCommand(_ command: String) -> Bool {
         guard !session.connectedPeers.isEmpty,
-              let data = command.data(using: .utf8) else { return false }
-        try? session.send(data, toPeers: session.connectedPeers, with: .reliable)
-        return true
+              let data = command.data(using: .utf8) else {
+            Log.mpc.info("sendCommand(\(command, privacy: .public)) failed: no connected peers")
+            return false
+        }
+        do {
+            try session.send(data, toPeers: session.connectedPeers, with: .reliable)
+            Log.mpc.info("sendCommand(\(command, privacy: .public)) succeeded")
+            return true
+        } catch {
+            Log.mpc.error("sendCommand(\(command, privacy: .public)) error: \(error.localizedDescription, privacy: .public)")
+            return false
+        }
     }
 
     var hasConnectedPeer: Bool { !session.connectedPeers.isEmpty }
@@ -65,6 +75,14 @@ class MultipeerManager: NSObject, ObservableObject {
 extension MultipeerManager: MCSessionDelegate {
 
     func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
+        let stateStr: String
+        switch state {
+        case .notConnected: stateStr = "notConnected"
+        case .connecting:   stateStr = "connecting"
+        case .connected:    stateStr = "connected"
+        @unknown default:   stateStr = "unknown"
+        }
+        Log.mpc.info("Peer \(peerID.displayName, privacy: .public) state: \(stateStr, privacy: .public)")
         DispatchQueue.main.async { [weak self] in
             self?.isConnected = state == .connected
         }
@@ -72,6 +90,7 @@ extension MultipeerManager: MCSessionDelegate {
 
     func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
         guard let message = String(data: data, encoding: .utf8) else { return }
+        Log.mpc.info("Received message: \(message, privacy: .public) from \(peerID.displayName, privacy: .public)")
         DispatchQueue.main.async { [weak self] in
             switch message {
             case "approved":        self?.onConfirmationReceived?(true)
@@ -97,12 +116,17 @@ extension MultipeerManager: MCNearbyServiceBrowserDelegate {
 
     func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID,
                  withDiscoveryInfo info: [String: String]?) {
+        Log.mpc.info("Found peer: \(peerID.displayName, privacy: .public)")
         // Auto-invite every peer that advertises our service type.
         browser.invitePeer(peerID, to: session, withContext: nil, timeout: 30)
     }
 
-    func browser(_ browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {}
+    func browser(_ browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {
+        Log.mpc.info("Lost peer: \(peerID.displayName, privacy: .public)")
+    }
 
     func browser(_ browser: MCNearbyServiceBrowser,
-                 didNotStartBrowsingForPeers error: Error) {}
+                 didNotStartBrowsingForPeers error: Error) {
+        Log.mpc.error("Failed to start browsing: \(error.localizedDescription, privacy: .public)")
+    }
 }

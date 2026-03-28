@@ -17,6 +17,7 @@ class ProximityAdvertiser: ObservableObject {
 
     @Published var isEnabled: Bool = true {
         didSet {
+            Log.ui.info("isEnabled changed to \(self.isEnabled, privacy: .public)")
             UserDefaults.standard.set(isEnabled, forKey: "isEnabled")
             isEnabled ? bleManager.startAdvertising() : bleManager.stopAdvertising()
         }
@@ -47,6 +48,7 @@ class ProximityAdvertiser: ObservableObject {
             isEnabled = UserDefaults.standard.bool(forKey: "isEnabled")
         }
         requiresConfirmation = confirmationManager.requiresConfirmation
+        Log.ui.info("Init: isEnabled=\(self.isEnabled, privacy: .public), requiresConfirmation=\(self.requiresConfirmation, privacy: .public)")
 
         // Forward BLE state to published properties
         ble.$bluetoothState.assign(to: &$bluetoothState)
@@ -71,20 +73,24 @@ class ProximityAdvertiser: ObservableObject {
     /// Sends approval via both BLE and MPC so the Mac receives it on whichever channel
     /// responds first.
     func approve() {
+        Log.proximity.info("User approved unlock")
         confirmationManager.approve()               // sends via BLE
         multipeerManager.sendConfirmation(approved: true)   // also via MPC
     }
 
     func deny() {
+        Log.proximity.info("User denied unlock")
         confirmationManager.deny()                  // sends via BLE
         multipeerManager.sendConfirmation(approved: false)  // also via MPC
     }
 
     func lockMac() {
+        Log.proximity.info("Sending lock command")
         multipeerManager.sendMessage("lock_command")
     }
 
     func unlockMac() {
+        Log.proximity.info("Sending unlock command")
         multipeerManager.sendMessage("unlock_command")
     }
 

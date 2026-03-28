@@ -1,6 +1,7 @@
 import CoreBluetooth
 import Foundation
 import AppKit
+import os
 
 /// The service UUID that the iPhone app will advertise.
 /// Both the Mac and iPhone apps must use this exact UUID.
@@ -118,6 +119,7 @@ class BLECentralManager: NSObject, BLECentralManaging {
     }
 
     private func handleWakeFromSleep() {
+        Log.ble.info("Handling wake from sleep")
         // Cancel any stale peripheral connection; didDisconnectPeripheral will fire,
         // reset state, and restart scanning automatically.
         if let p = peripheral {
@@ -130,6 +132,7 @@ class BLECentralManager: NSObject, BLECentralManaging {
     // MARK: - Characteristics
 
     func writeCommand(_ command: String) {
+        Log.ble.info("Writing BLE command: \(command, privacy: .public)")
         guard let peripheral, let char = requestChar else {
             // Characteristics not yet discovered — queue the command.
             pendingCommand = command
@@ -155,6 +158,7 @@ class BLECentralManager: NSObject, BLECentralManaging {
 
 extension BLECentralManager: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        Log.ble.info("Central manager state: \(String(describing: central.state.rawValue), privacy: .public)")
         if central.state == .poweredOn {
             startScanning()
         }
@@ -172,6 +176,7 @@ extension BLECentralManager: CBCentralManagerDelegate {
 
         if self.peripheral == nil {
             // First discovery — stop scan, connect so we can send commands.
+            Log.ble.info("Discovered peripheral: \(peripheral.name ?? "unknown", privacy: .public) RSSI=\(rssiValue, privacy: .public)")
             self.peripheral = peripheral
             self.peripheral?.delegate = self
             self.central.stopScan()
@@ -183,6 +188,7 @@ extension BLECentralManager: CBCentralManagerDelegate {
     }
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        Log.ble.info("Connected to peripheral: \(peripheral.name ?? "unknown", privacy: .public)")
         peripheral.discoverServices([BLEConstants.serviceUUID])
         startRSSIPolling()
     }
@@ -192,6 +198,7 @@ extension BLECentralManager: CBCentralManagerDelegate {
         didDisconnectPeripheral peripheral: CBPeripheral,
         error: Error?
     ) {
+        Log.ble.info("Disconnected from peripheral: \(peripheral.name ?? "unknown", privacy: .public), error: \(error?.localizedDescription ?? "none", privacy: .public)")
         stopRSSIPolling()
         requestChar = nil
         confirmChar = nil
@@ -206,6 +213,7 @@ extension BLECentralManager: CBCentralManagerDelegate {
         didFailToConnect peripheral: CBPeripheral,
         error: Error?
     ) {
+        Log.ble.error("Failed to connect to peripheral: \(peripheral.name ?? "unknown", privacy: .public), error: \(error?.localizedDescription ?? "none", privacy: .public)")
         self.peripheral = nil
         startScanning()
     }
@@ -217,11 +225,15 @@ extension BLECentralManager: CBPeripheralDelegate {
 
     func peripheral(_ peripheral: CBPeripheral, didReadRSSI RSSI: NSNumber, error: Error?) {
         guard error == nil else { return }
+        Log.ble.debug("RSSI: \(RSSI.intValue, privacy: .public)")
         resetLostTimer()
         onRSSIUpdate(RSSI.intValue)
     }
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+        if let error {
+            Log.ble.error("Service discovery error: \(error.localizedDescription, privacy: .public)")
+        }
         guard error == nil,
               let service = peripheral.services?.first(where: { $0.uuid == BLEConstants.serviceUUID })
         else { return }
@@ -236,6 +248,9 @@ extension BLECentralManager: CBPeripheralDelegate {
         didDiscoverCharacteristicsFor service: CBService,
         error: Error?
     ) {
+        if let error {
+            Log.ble.error("Characteristic discovery error: \(error.localizedDescription, privacy: .public)")
+        }
         guard error == nil else { return }
         for char in service.characteristics ?? [] {
             switch char.uuid {

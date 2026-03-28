@@ -84,10 +84,16 @@ class ProximityMonitor: ObservableObject {
         }
         // Wire iPhone-initiated lock/unlock commands.
         multipeerManager.onLockCommand = { [weak self] in
-            Task { @MainActor [weak self] in self?.unlockManager.lockScreen() }
+            Task { @MainActor [weak self] in
+                Log.proximity.info("Received remote lock command")
+                self?.unlockManager.lockScreen()
+            }
         }
         multipeerManager.onUnlockCommand = { [weak self] in
-            Task { @MainActor [weak self] in self?.unlockManager.unlockScreen() }
+            Task { @MainActor [weak self] in
+                Log.proximity.info("Received remote unlock command")
+                self?.unlockManager.unlockScreen()
+            }
         }
     }
 
@@ -129,6 +135,7 @@ class ProximityMonitor: ObservableObject {
             farTimer?.invalidate()
             farTimer = nil
             if proximityState != .near && nearTimer == nil {
+                Log.proximity.debug("RSSI \(newRSSI, privacy: .public) crossed near threshold \(self.nearThreshold, privacy: .public)")
                 nearTimer = Timer.scheduledTimer(withTimeInterval: hysteresisSeconds, repeats: false) { [weak self] _ in
                     Task { @MainActor [weak self] in self?.transitionToNear() }
                 }
@@ -137,6 +144,7 @@ class ProximityMonitor: ObservableObject {
             nearTimer?.invalidate()
             nearTimer = nil
             if proximityState != .far && farTimer == nil {
+                Log.proximity.debug("RSSI \(newRSSI, privacy: .public) crossed far threshold \(self.farThreshold, privacy: .public)")
                 farTimer = Timer.scheduledTimer(withTimeInterval: hysteresisSeconds, repeats: false) { [weak self] _ in
                     Task { @MainActor [weak self] in self?.transitionToFar() }
                 }
@@ -149,6 +157,7 @@ class ProximityMonitor: ObservableObject {
     // MARK: - Confirmation Response (internal so tests can call directly)
 
     func handleConfirmationResponse(_ approved: Bool) {
+        Log.proximity.info("Confirmation response: \(approved ? "approved" : "denied", privacy: .public)")
         confirmationTimer?.invalidate()
         confirmationTimer = nil
         awaitingConfirmation = false
@@ -161,6 +170,7 @@ class ProximityMonitor: ObservableObject {
 
     func transitionToNear() {
         nearTimer = nil
+        Log.proximity.info("Transitioning to near (isEnabled=\(self.isEnabled, privacy: .public), isScreenLocked=\(self.unlockManager.isScreenLocked(), privacy: .public))")
         guard isEnabled else { return }
         proximityState = .near
         guard unlockManager.isScreenLocked() else { return }
@@ -174,6 +184,7 @@ class ProximityMonitor: ObservableObject {
 
     func transitionToFar() {
         farTimer = nil
+        Log.proximity.info("Transitioning to far")
         cancelConfirmationWait()
         guard isEnabled else { return }
         proximityState = .far
@@ -187,6 +198,7 @@ class ProximityMonitor: ObservableObject {
 
     private func requestUnlockConfirmation() {
         guard !awaitingConfirmation else { return }
+        Log.proximity.info("Requesting unlock confirmation from iPhone")
         awaitingConfirmation = true
         sendCommand("unlock_request")
 
@@ -219,7 +231,10 @@ class ProximityMonitor: ObservableObject {
     /// Both channels are tried when both are available so the message gets through either way.
     private func sendCommand(_ command: String) {
         let sentViaMPC = multipeerManager.sendCommand(command)
-        if !sentViaMPC {
+        if sentViaMPC {
+            Log.proximity.info("Sent command via MPC: \(command, privacy: .public)")
+        } else {
+            Log.proximity.info("MPC unavailable, falling back to BLE for command: \(command, privacy: .public)")
             bleManager?.writeCommand(command)
         }
     }

@@ -42,6 +42,7 @@ class UnlockConfirmationManager: ObservableObject {
 
     /// Handles an unlock request arriving via BLE or MPC.
     func receiveUnlockRequest() {
+        Log.unlock.info("Received unlock request (requiresConfirmation=\(self.requiresConfirmation, privacy: .public))")
         if !requiresConfirmation {
             approve()
             return
@@ -52,6 +53,7 @@ class UnlockConfirmationManager: ObservableObject {
 
     /// Handles a lock event arriving via BLE or MPC.
     func receiveLockEvent() {
+        Log.unlock.info("Received lock event")
         pendingRequest = false
         notificationCenter.removePendingNotificationRequests(withIdentifiers: [confirmNotificationId])
         notificationCenter.removeDeliveredNotifications(withIdentifiers: [confirmNotificationId])
@@ -63,12 +65,14 @@ class UnlockConfirmationManager: ObservableObject {
     // MARK: - Confirmation Actions
 
     func approve() {
+        Log.unlock.info("Confirmation approved")
         bleManager?.sendConfirmation(approved: true)
         pendingRequest = false
         cancelNotification()
     }
 
     func deny() {
+        Log.unlock.info("Confirmation denied")
         bleManager?.sendConfirmation(approved: false)
         pendingRequest = false
         cancelNotification()
@@ -77,7 +81,9 @@ class UnlockConfirmationManager: ObservableObject {
     // MARK: - Notifications
 
     func requestNotificationPermission() {
-        notificationCenter.requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        notificationCenter.requestAuthorization(options: [.alert, .sound]) { granted, error in
+            Log.unlock.info("Notification permission: \(granted ? "granted" : "denied", privacy: .public)")
+        }
         registerNotificationActions()
     }
 
@@ -102,6 +108,7 @@ class UnlockConfirmationManager: ObservableObject {
     }
 
     private func scheduleUnlockNotification() {
+        Log.unlock.info("Scheduling unlock notification")
         let content = UNMutableNotificationContent()
         content.title = "Mac Unlock Request"
         content.body = "Your Mac is requesting to unlock the screen. Allow?"

@@ -47,6 +47,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         Task { @MainActor in
+            Log.ui.info("Notification action: \(response.actionIdentifier, privacy: .public)")
             switch response.actionIdentifier {
             case "APPROVE_UNLOCK":
                 advertiser?.approve()

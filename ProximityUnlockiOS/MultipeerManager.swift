@@ -48,11 +48,13 @@ class MultipeerManager: NSObject, ObservableObject {
 
     /// Sends an approval or denial back to all connected Mac peers reliably.
     func sendConfirmation(approved: Bool) {
+        Log.mpc.info("Sending confirmation: \(approved ? "approved" : "denied", privacy: .public)")
         sendMessage(approved ? "approved" : "denied")
     }
 
     /// Sends a command to all connected Mac peers reliably.
     func sendMessage(_ message: String) {
+        Log.mpc.info("Sending message: \(message, privacy: .public)")
         guard !session.connectedPeers.isEmpty,
               let data = message.data(using: .utf8) else { return }
         try? session.send(data, toPeers: session.connectedPeers, with: .reliable)
@@ -66,6 +68,14 @@ class MultipeerManager: NSObject, ObservableObject {
 extension MultipeerManager: MCSessionDelegate {
 
     func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
+        let stateStr: String
+        switch state {
+        case .notConnected: stateStr = "notConnected"
+        case .connecting:   stateStr = "connecting"
+        case .connected:    stateStr = "connected"
+        @unknown default:   stateStr = "unknown"
+        }
+        Log.mpc.info("Peer \(peerID.displayName, privacy: .public) state: \(stateStr, privacy: .public)")
         DispatchQueue.main.async { [weak self] in
             self?.isConnected = state == .connected
         }
@@ -73,6 +83,7 @@ extension MultipeerManager: MCSessionDelegate {
 
     func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
         guard let message = String(data: data, encoding: .utf8) else { return }
+        Log.mpc.info("Received message: \(message, privacy: .public) from \(peerID.displayName, privacy: .public)")
         DispatchQueue.main.async { [weak self] in
             switch message {
             case "unlock_request": self?.onUnlockRequest?()
@@ -98,10 +109,13 @@ extension MultipeerManager: MCNearbyServiceAdvertiserDelegate {
                     didReceiveInvitationFromPeer peerID: MCPeerID,
                     withContext context: Data?,
                     invitationHandler: @escaping (Bool, MCSession?) -> Void) {
+        Log.mpc.info("Received invitation from peer: \(peerID.displayName, privacy: .public)")
         // Accept all invitations from any Mac running ProximityUnlock.
         invitationHandler(true, session)
     }
 
     func advertiser(_ advertiser: MCNearbyServiceAdvertiser,
-                    didNotStartAdvertisingPeer error: Error) {}
+                    didNotStartAdvertisingPeer error: Error) {
+        Log.mpc.error("Failed to start advertising: \(error.localizedDescription, privacy: .public)")
+    }
 }

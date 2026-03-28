@@ -14,6 +14,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        Log.ui.info("App launched")
         NSApp.setActivationPolicy(.accessory)
         setupStatusBar()
 
@@ -53,10 +54,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func toggleEnabled() {
         proximityMonitor.isEnabled.toggle()
+        Log.ui.info("Toggled enabled: \(self.proximityMonitor.isEnabled, privacy: .public)")
         updateStatusBarIcon()
     }
 
     @objc private func openSettings() {
+        Log.ui.info("Opening settings")
         if settingsWindow == nil {
             let view = SettingsView().environmentObject(proximityMonitor)
             let window = NSWindow(

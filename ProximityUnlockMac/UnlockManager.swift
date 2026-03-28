@@ -13,10 +13,13 @@ class UnlockManager {
 
     func isScreenLocked() -> Bool {
         guard let dict = CGSessionCopyCurrentDictionary() as? [String: Any] else { return false }
-        return dict["CGSSessionScreenIsLocked"] as? Bool ?? false
+        let locked = dict["CGSSessionScreenIsLocked"] as? Bool ?? false
+        Log.unlock.debug("isScreenLocked: \(locked, privacy: .public)")
+        return locked
     }
 
     func unlockScreen() {
+        Log.unlock.info("Unlocking screen")
         wakeDisplay()
         guard let password = KeychainHelper.shared.getPassword() else { return }
 
@@ -30,6 +33,7 @@ class UnlockManager {
     }
 
     func lockScreen() {
+        Log.unlock.info("Locking screen")
         let task = Process()
         task.launchPath = "/usr/bin/pmset"
         task.arguments = ["displaysleepnow"]
@@ -39,6 +43,7 @@ class UnlockManager {
     // MARK: - Private
 
     private func wakeDisplay() {
+        Log.unlock.info("Waking display")
         var assertionID: IOPMAssertionID = 0
         IOPMAssertionDeclareUserActivity(
             "Proximity Unlock" as CFString,
@@ -57,6 +62,7 @@ class UnlockManager {
                 // the login window should be accepting input.
                 if let dict = CGSessionCopyCurrentDictionary() as? [String: Any],
                    dict["CGSSessionScreenIsLocked"] as? Bool == true {
+                    Log.unlock.info("Login window detected")
                     // Extra settle time for the login window UI.
                     usleep(500_000) // 500ms
                     completion()
@@ -65,12 +71,14 @@ class UnlockManager {
                 usleep(250_000) // poll every 250ms
             }
             // Timeout — try anyway as a best-effort.
+            Log.unlock.warning("Login window detection timed out, proceeding anyway")
             completion()
         }
     }
 
     /// Click the center of the main screen to focus the password field.
     private func clickPasswordField() {
+        Log.unlock.info("Clicking password field")
         let source = CGEventSource(stateID: .hidSystemState)
         let screen = NSScreen.main ?? NSScreen.screens.first
         let center = CGPoint(
@@ -86,6 +94,7 @@ class UnlockManager {
     }
 
     private func typeStringAndSubmit(_ text: String) {
+        Log.unlock.info("Typing password and submitting")
         guard isAccessibilityGranted() else { return }
 
         let source = CGEventSource(stateID: .hidSystemState)
@@ -114,6 +123,10 @@ class UnlockManager {
     }
 
     private func isAccessibilityGranted() -> Bool {
-        AXIsProcessTrusted()
+        let granted = AXIsProcessTrusted()
+        if !granted {
+            Log.unlock.warning("Accessibility permission not granted")
+        }
+        return granted
     }
 }
