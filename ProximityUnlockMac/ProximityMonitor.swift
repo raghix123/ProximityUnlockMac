@@ -82,6 +82,13 @@ class ProximityMonitor: ObservableObject {
         multipeerManager.onConfirmationReceived = { [weak self] approved in
             Task { @MainActor [weak self] in self?.handleConfirmationResponse(approved) }
         }
+        // Wire iPhone-initiated lock/unlock commands.
+        multipeerManager.onLockCommand = { [weak self] in
+            Task { @MainActor [weak self] in self?.unlockManager.lockScreen() }
+        }
+        multipeerManager.onUnlockCommand = { [weak self] in
+            Task { @MainActor [weak self] in self?.unlockManager.unlockScreen() }
+        }
     }
 
     /// Testable designated init — all dependencies injectable.

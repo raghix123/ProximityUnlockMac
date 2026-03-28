@@ -48,9 +48,13 @@ class MultipeerManager: NSObject, ObservableObject {
 
     /// Sends an approval or denial back to all connected Mac peers reliably.
     func sendConfirmation(approved: Bool) {
-        guard !session.connectedPeers.isEmpty else { return }
-        let message = approved ? "approved" : "denied"
-        guard let data = message.data(using: .utf8) else { return }
+        sendMessage(approved ? "approved" : "denied")
+    }
+
+    /// Sends a command to all connected Mac peers reliably.
+    func sendMessage(_ message: String) {
+        guard !session.connectedPeers.isEmpty,
+              let data = message.data(using: .utf8) else { return }
         try? session.send(data, toPeers: session.connectedPeers, with: .reliable)
     }
 

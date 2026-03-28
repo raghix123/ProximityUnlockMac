@@ -80,6 +80,14 @@ class ProximityAdvertiser: ObservableObject {
         multipeerManager.sendConfirmation(approved: false)  // also via MPC
     }
 
+    func lockMac() {
+        multipeerManager.sendMessage("lock_command")
+    }
+
+    func unlockMac() {
+        multipeerManager.sendMessage("unlock_command")
+    }
+
     var bluetoothStatusDescription: String {
         switch bluetoothState {
         case .poweredOn:     return isAdvertising ? (isConnected ? "Connected to Mac" : "Advertising...") : "Stopped"

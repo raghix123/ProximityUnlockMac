@@ -40,6 +40,33 @@ struct ContentView: View {
                     }
                 }
 
+                // MARK: Manual Lock / Unlock
+                if advertiser.isConnected {
+                    Section("Mac Controls") {
+                        Button {
+                            advertiser.unlockMac()
+                        } label: {
+                            Label("Unlock Mac", systemImage: "lock.open.fill")
+                                .frame(maxWidth: .infinity)
+                                .foregroundStyle(.white)
+                                .fontWeight(.semibold)
+                                .padding(.vertical, 2)
+                        }
+                        .listRowBackground(Color.green)
+
+                        Button {
+                            advertiser.lockMac()
+                        } label: {
+                            Label("Lock Mac", systemImage: "lock.fill")
+                                .frame(maxWidth: .infinity)
+                                .foregroundStyle(.white)
+                                .fontWeight(.semibold)
+                                .padding(.vertical, 2)
+                        }
+                        .listRowBackground(Color.orange)
+                    }
+                }
+
                 // MARK: Controls
                 Section("Advertising") {
                     Toggle("Enable ProximityUnlock", isOn: $advertiser.isEnabled)

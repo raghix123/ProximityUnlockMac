@@ -29,6 +29,10 @@ class MultipeerManager: NSObject, ObservableObject {
 
     /// Called on the main queue when the iPhone sends "approved" or "denied".
     var onConfirmationReceived: ((Bool) -> Void)?
+    /// Called on the main queue when the iPhone sends "lock_command".
+    var onLockCommand: (() -> Void)?
+    /// Called on the main queue when the iPhone sends "unlock_command".
+    var onUnlockCommand: (() -> Void)?
 
     // MARK: - Init
 
@@ -70,9 +74,11 @@ extension MultipeerManager: MCSessionDelegate {
         guard let message = String(data: data, encoding: .utf8) else { return }
         DispatchQueue.main.async { [weak self] in
             switch message {
-            case "approved": self?.onConfirmationReceived?(true)
-            case "denied":   self?.onConfirmationReceived?(false)
-            default:         break
+            case "approved":        self?.onConfirmationReceived?(true)
+            case "denied":          self?.onConfirmationReceived?(false)
+            case "lock_command":    self?.onLockCommand?()
+            case "unlock_command":  self?.onUnlockCommand?()
+            default:                break
             }
         }
     }
