@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import os
 
 enum ProximityState {
     case near, far, unknown
@@ -38,9 +39,10 @@ class ProximityMonitor: ObservableObject {
     private(set) var bleManager: (any BLECentralManaging)!
     private let unlockManager: any UnlockManaging
 
-    /// MultipeerConnectivity channel — uses WiFi Direct / WiFi / Bluetooth automatically,
-    /// giving much more reliable message delivery than raw BLE GATT writes.
-    let multipeerManager = MultipeerManager()
+    /// MultipeerConnectivity channel — injectable for testing via designated init.
+    /// Production code uses the real MultipeerManager; tests use NullMultipeerManager by default
+    /// or a MockMultipeerManager for assertions on sent commands.
+    private(set) var multipeerManager: any MacMultipeerManaging
 
     // Hysteresis and confirmation timeout — injectable for fast tests.
     let hysteresisSeconds: TimeInterval
@@ -53,7 +55,7 @@ class ProximityMonitor: ObservableObject {
     var statusDescription: String {
         if !isEnabled { return "ProximityUnlock: Disabled" }
         if !isPhoneDetected { return "Scanning for iPhone..." }
-        if awaitingConfirmation { return "Waiting for iPhone confirmation..." }
+        if awaitingConfirmation && requireConfirmation { return "Waiting for iPhone confirmation..." }
         switch proximityState {
         case .near:    return "iPhone nearby"
         case .far:     return "iPhone away"
@@ -65,7 +67,8 @@ class ProximityMonitor: ObservableObject {
 
     /// Production init — creates real BLE and Unlock managers.
     convenience init() {
-        self.init(unlockManager: UnlockManager())
+        let mpc = MultipeerManager()
+        self.init(unlockManager: UnlockManager(), multipeerManager: mpc)
         // Phase 2: self is now fully initialized; we can safely capture it in closures.
         self.bleManager = BLECentralManager(
             onRSSIUpdate: { [weak self] rssi in
@@ -107,18 +110,22 @@ class ProximityMonitor: ObservableObject {
     }
 
     /// Testable designated init — all dependencies injectable.
-    /// Tests inject a MockBLECentralManager and call handleRSSI/handleConfirmationResponse directly.
+    /// Tests inject MockBLECentralManager and MockMultipeerManager; call handleRSSI/handleConfirmationResponse directly.
+    /// Pass nil for multipeerManager to get NullMultipeerManager (MPC no-op, BLE fallback active — matches legacy test behavior).
     init(
         bleManager: (any BLECentralManaging)? = nil,
         unlockManager: any UnlockManaging,
+        multipeerManager: (any MacMultipeerManaging)? = nil,
         hysteresisSeconds: TimeInterval = 1.5,
         confirmationTimeout: TimeInterval = 15.0
     ) {
-        self.unlockManager      = unlockManager
-        self.hysteresisSeconds  = hysteresisSeconds
+        self.unlockManager       = unlockManager
+        self.hysteresisSeconds   = hysteresisSeconds
         self.confirmationTimeout = confirmationTimeout
         // bleManager is set to nil here; convenience init overwrites it; tests supply their own.
         self.bleManager = bleManager
+        // nil → NullMultipeerManager (sendCommand always returns false, falls through to BLE in tests)
+        self.multipeerManager = multipeerManager ?? NullMultipeerManager()
 
         // Restore persisted settings
         if UserDefaults.standard.object(forKey: "isEnabled") != nil {
@@ -185,11 +192,11 @@ class ProximityMonitor: ObservableObject {
         proximityState = .near
         guard unlockManager.isScreenLocked() else { return }
 
-        if requireConfirmation {
-            requestUnlockConfirmation()
-        } else {
-            unlockManager.unlockScreen()
-        }
+        // Always route through MPC (WiFi) so the unlock signal travels over WiFi,
+        // not directly from BLE RSSI alone. The iPhone auto-approves when
+        // requiresConfirmation is disabled on its side; the Mac unlocks once it
+        // receives the "approved" message back over MPC.
+        requestUnlockConfirmation()
     }
 
     func transitionToFar() {

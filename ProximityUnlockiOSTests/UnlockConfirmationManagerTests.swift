@@ -39,6 +39,26 @@ final class UnlockConfirmationManagerTests: XCTestCase {
         // sendConfirmation called with approved=true; no subscribers so no updateValue, but state is consistent
     }
 
+    /// Tests receiveUnlockRequest() directly (not via BLE simulation) with confirmation disabled.
+    func testDirectReceiveUnlockRequestAutoApprovesWhenConfirmationDisabled() {
+        confirmManager.requiresConfirmation = false
+
+        confirmManager.receiveUnlockRequest()
+
+        XCTAssertFalse(confirmManager.pendingRequest, "pendingRequest must not be set when auto-approving")
+        XCTAssertFalse(mockNC.notificationFired, "no notification should be fired when auto-approving")
+    }
+
+    /// Tests receiveUnlockRequest() directly with confirmation enabled — should show notification.
+    func testDirectReceiveUnlockRequestShowsNotificationWhenConfirmationEnabled() {
+        confirmManager.requiresConfirmation = true
+
+        confirmManager.receiveUnlockRequest()
+
+        XCTAssertTrue(confirmManager.pendingRequest, "pendingRequest must be set when confirmation is required")
+        XCTAssertTrue(mockNC.notificationFired, "notification must be fired when confirmation is required")
+    }
+
     // MARK: - Notification Firing
 
     func testNotificationFiredWhenConfirmationRequired() async throws {

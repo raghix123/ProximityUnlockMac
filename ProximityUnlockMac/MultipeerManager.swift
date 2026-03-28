@@ -1,6 +1,7 @@
 import Combine
 import Foundation
 import MultipeerConnectivity
+import os
 
 /// Manages the Mac side of a MultipeerConnectivity session.
 ///
@@ -9,7 +10,7 @@ import MultipeerConnectivity
 /// This manager browses for nearby iPhones advertising the "prox-unlock" service,
 /// connects automatically, and provides a reliable channel for unlock commands and
 /// confirmation responses alongside BLE RSSI-based proximity sensing.
-class MultipeerManager: NSObject, ObservableObject {
+class MultipeerManager: NSObject, ObservableObject, MacMultipeerManaging {
 
     // MARK: - Constants
 

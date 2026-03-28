@@ -22,6 +22,8 @@
 	<true/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>ProximityUnlock uses Bluetooth to advertise your iPhone's presence so your Mac can detect when you're nearby and unlock automatically.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>ProximityUnlock uses Face ID to verify your identity before automatically unlocking your Mac.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>ProximityUnlock uses the local network to maintain a reliable connection with your Mac for proximity unlocking.</string>
 	<key>NSBonjourServices</key>

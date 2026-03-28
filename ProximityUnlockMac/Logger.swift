@@ -6,4 +6,6 @@ enum Log {
     static let unlock    = Logger(subsystem: "com.raghav.ProximityUnlock", category: "Unlock")
     static let mpc       = Logger(subsystem: "com.raghav.ProximityUnlock", category: "MPC")
     static let ui        = Logger(subsystem: "com.raghav.ProximityUnlock", category: "UI")
+    static let pairing   = Logger(subsystem: "com.raghav.ProximityUnlock", category: "Pairing")
+    static let security  = Logger(subsystem: "com.raghav.ProximityUnlock", category: "Security")
 }

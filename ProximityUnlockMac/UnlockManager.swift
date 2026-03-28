@@ -1,6 +1,7 @@
 import AppKit
 import CoreGraphics
 import IOKit.pwr_mgt
+import os
 
 /// Handles waking the display and typing the password to unlock the Mac.
 ///

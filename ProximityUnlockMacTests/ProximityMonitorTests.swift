@@ -47,8 +47,17 @@ final class ProximityMonitorTests: XCTestCase {
         monitor.handleRSSI(-60)   // above nearThreshold (-70)
         try await Task.sleep(nanoseconds: UInt64(hysteresis * 1.5 * 1_000_000_000))
 
+        // RSSI crossed — Mac sends unlock_request via MPC and waits for approval.
+        // Even with requireConfirmation=false the round-trip goes over WiFi.
         XCTAssertEqual(monitor.proximityState, .near)
-        XCTAssertTrue(mockUnlock.didUnlock, "unlockScreen should be called when phone is near and screen is locked")
+        XCTAssertTrue(monitor.awaitingConfirmation, "should be awaiting MPC approval even with requireConfirmation=false")
+        XCTAssertTrue(mockBLE.didWrite("unlock_request"), "unlock_request must be sent via MPC channel")
+        XCTAssertFalse(mockUnlock.didUnlock, "must not unlock until iPhone approval arrives over MPC")
+
+        // iPhone auto-approves via MPC → Mac unlocks
+        monitor.handleConfirmationResponse(true)
+        XCTAssertTrue(mockUnlock.didUnlock, "unlockScreen should be called after MPC approval")
+        XCTAssertFalse(monitor.awaitingConfirmation)
     }
 
     func testNearTransitionDoesNotUnlockIfScreenAlreadyUnlocked() async throws {
@@ -245,5 +254,44 @@ final class ProximityMonitorTests: XCTestCase {
         monitor.handleConfirmationResponse(false)
         XCTAssertFalse(mockUnlock.didUnlock)
         XCTAssertEqual(mockBLE.writtenCommands.filter { $0 == "unlock_request" }.count, 1)
+    }
+
+    // MARK: - Direct Transition Methods When Disabled
+
+    func testTransitionToNearDoesNothingWhenDisabled() async throws {
+        monitor.isEnabled = false
+        mockUnlock.screenLocked = true
+
+        // Call transitionToNear directly — it should bail out because isEnabled is false.
+        monitor.transitionToNear()
+
+        XCTAssertFalse(mockUnlock.didUnlock, "transitionToNear must not unlock when isEnabled is false")
+        // proximityState should NOT be set to .near when disabled
+        XCTAssertNotEqual(monitor.proximityState, .near, "proximityState must not change to .near when disabled")
+    }
+
+    func testTransitionToFarDoesNothingWhenDisabled() async throws {
+        monitor.isEnabled = false
+        UserDefaults.standard.set(true, forKey: "lockWhenFar")
+
+        // Call transitionToFar directly — it should bail out because isEnabled is false.
+        monitor.transitionToFar()
+
+        XCTAssertFalse(mockUnlock.didLock, "transitionToFar must not lock when isEnabled is false")
+        // proximityState should NOT be set to .far when disabled
+        XCTAssertNotEqual(monitor.proximityState, .far, "proximityState must not change to .far when disabled")
+        XCTAssertFalse(mockBLE.didWrite("lock_event"), "should not send lock_event when disabled")
+    }
+
+    func testConfirmationApprovalDoesNothingWhenScreenNotLocked() async throws {
+        mockUnlock.screenLocked = false
+        monitor.requireConfirmation = true
+        monitor.awaitingConfirmation = true
+
+        // Simulate approval when screen is already unlocked — deduplication guard.
+        monitor.handleConfirmationResponse(true)
+
+        XCTAssertFalse(mockUnlock.didUnlock, "should not call unlockScreen when screen is already unlocked")
+        XCTAssertFalse(monitor.awaitingConfirmation, "awaitingConfirmation should still be cleared")
     }
 }

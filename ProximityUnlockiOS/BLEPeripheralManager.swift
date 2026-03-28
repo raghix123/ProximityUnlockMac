@@ -27,11 +27,17 @@ class BLEPeripheralManager: NSObject, ObservableObject {
 
     // MARK: - Init
 
-    /// Production init — creates a real CBPeripheralManager.
+    /// Production init — creates a real CBPeripheralManager with state restoration.
     convenience override init() {
         self.init(peripheralManager: nil)
-        // Phase 2: self is ready, create real manager that calls back to delegate
-        let real = CBPeripheralManager(delegate: self, queue: nil)
+        // Phase 2: self is ready, create real manager that calls back to delegate.
+        // CBPeripheralManagerOptionRestoreIDKey enables state restoration so iOS can
+        // revive the app after background termination and resume BLE advertising.
+        let real = CBPeripheralManager(
+            delegate: self,
+            queue: nil,
+            options: [CBPeripheralManagerOptionRestoreIdentifierKey: "com.raghav.ProximityUnlock.peripheral"]
+        )
         self.peripheralManager = real
     }
 
@@ -63,12 +69,12 @@ class BLEPeripheralManager: NSObject, ObservableObject {
 
     /// Send confirmation response ("approved" or "denied") back to connected Mac.
     func sendConfirmation(approved: Bool) {
+        pendingUnlockRequest = false
         guard !subscribedCentrals.isEmpty, let char = confirmChar else { return }
         let value = approved ? "approved" : "denied"
         Log.ble.info("Sending confirmation: \(value, privacy: .public) to \(self.subscribedCentrals.count, privacy: .public) subscriber(s)")
         let data = Data(value.utf8)
         peripheralManager?.updateValue(data, for: char, onSubscribedCentrals: subscribedCentrals)
-        pendingUnlockRequest = false
     }
 
     // MARK: - Private Helpers
@@ -114,6 +120,12 @@ class BLEPeripheralManager: NSObject, ObservableObject {
 // MARK: - CBPeripheralManagerDelegate
 
 extension BLEPeripheralManager: CBPeripheralManagerDelegate {
+
+    func peripheralManager(_ peripheral: CBPeripheralManager, willRestoreState dict: [String: Any]) {
+        // iOS terminated the app in the background; restore advertising state.
+        // Re-advertising happens automatically when peripheralManagerDidUpdateState fires with .poweredOn.
+        Log.ble.info("Restoring peripheral manager state after background termination")
+    }
 
     func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
         Log.ble.info("Peripheral manager state: \(String(describing: peripheral.state.rawValue), privacy: .public)")

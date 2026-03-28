@@ -13,6 +13,9 @@ class UnlockConfirmationManager: ObservableObject {
 
     private weak var bleManager: BLEPeripheralManager?
     private let notificationCenter: any NotificationCentering
+
+    /// Called after BLE confirmation is sent so the caller can also send via MPC.
+    var onConfirmationSent: ((Bool) -> Void)?
     private let confirmNotificationId = "com.raghav.ProximityUnlock.unlockRequest"
     private var requestTimeoutTimer: Timer?
 
@@ -81,6 +84,7 @@ class UnlockConfirmationManager: ObservableObject {
         requestTimeoutTimer?.invalidate()
         requestTimeoutTimer = nil
         bleManager?.sendConfirmation(approved: true)
+        onConfirmationSent?(true)
         pendingRequest = false
         cancelNotification()
     }
@@ -90,6 +94,7 @@ class UnlockConfirmationManager: ObservableObject {
         requestTimeoutTimer?.invalidate()
         requestTimeoutTimer = nil
         bleManager?.sendConfirmation(approved: false)
+        onConfirmationSent?(false)
         pendingRequest = false
         cancelNotification()
     }

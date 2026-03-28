@@ -67,23 +67,28 @@ class ProximityAdvertiser: ObservableObject {
         multipeerManager.onLockEvent = { [weak self] in
             Task { @MainActor [weak self] in self?.confirmationManager.receiveLockEvent() }
         }
+
+        // When a confirmation is sent (user taps or auto-approve), also send via MPC
+        // so the Mac receives it over WiFi, not just BLE GATT.
+        confirmationManager.onConfirmationSent = { [weak self] approved in
+            self?.multipeerManager.sendConfirmation(approved: approved)
+        }
+
         if isEnabled { multipeerManager.startAdvertising() }
     }
 
     // MARK: - Public API
 
-    /// Sends approval via both BLE and MPC so the Mac receives it on whichever channel
-    /// responds first.
     func approve() {
         Log.proximity.info("User approved unlock")
-        confirmationManager.approve()               // sends via BLE
-        multipeerManager.sendConfirmation(approved: true)   // also via MPC
+        // confirmationManager.approve() sends via BLE and fires onConfirmationSent → MPC
+        confirmationManager.approve()
     }
 
     func deny() {
         Log.proximity.info("User denied unlock")
-        confirmationManager.deny()                  // sends via BLE
-        multipeerManager.sendConfirmation(approved: false)  // also via MPC
+        // confirmationManager.deny() sends via BLE and fires onConfirmationSent → MPC
+        confirmationManager.deny()
     }
 
     func lockMac() {
