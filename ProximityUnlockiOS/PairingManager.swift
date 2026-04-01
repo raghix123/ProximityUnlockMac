@@ -39,7 +39,8 @@ class PairingManager: ObservableObject {
 
     private let pairingTimeoutSeconds: TimeInterval = 60
 
-    init(keyManager: IdentityKeyManager = .shared) {
+    init(keyManager: IdentityKeyManager? = nil) {
+        let keyManager = keyManager ?? IdentityKeyManager.shared
         self.keyManager = keyManager
         if let peerName = keyStore.getPairedPeerDisplayName(),
            keyStore.retrievePairedPeerPublicKey() != nil {
@@ -108,6 +109,15 @@ class PairingManager: ObservableObject {
 
     private func handlePairingRequest(_ request: PairingRequest) {
         Log.pairing.info("Received pairing request from \(request.displayName, privacy: .public)")
+        // Always clear old Keychain state before starting a fresh handshake, whether we were
+        // .paired or stuck mid-.pairing. This prevents stale keys from surviving a failed
+        // re-pair attempt (which would leave Keychain and in-memory state out of sync).
+        if case .unpaired = pairingState {
+            // Already clean — nothing to delete
+        } else {
+            Log.pairing.info("Clearing old pairing state before fresh handshake")
+            try? keyStore.deletePairingState()
+        }
         pairingState = .pairing(phase: .exchangingKeys)
         pairingError = nil
         startPairingTimeout()

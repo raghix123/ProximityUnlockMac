@@ -53,7 +53,24 @@ class MultipeerManager: NSObject, ObservableObject, MacMultipeerManaging {
         }
         pairingManager.onPaired = { [weak self] in
             Log.pairing.info("Pairing complete — operational channel active")
+            // Sync the in-memory replay counter with the just-reset persistent value (0).
+            // Without this, messages from iPhone are rejected as replays after re-pairing.
+            self?.messageSigner.resetReceiveCounter()
             self?.objectWillChange.send()
+        }
+        // If pairing times out or fails while the MPC peer is still connected,
+        // retry after a brief delay so the user doesn't have to disconnect/reconnect.
+        pairingManager.onPairingFailed = { [weak self] _ in
+            guard let self, !self.session.connectedPeers.isEmpty else { return }
+            Log.pairing.info("Pairing failed with peer still connected — retrying in 2s")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+                guard let self, !self.session.connectedPeers.isEmpty else { return }
+                // Guard against double-fire: only retry if we're actually unpaired,
+                // not if a new pairing handshake already started from a reconnect event.
+                guard !self.pairingManager.isPaired else { return }
+                guard case .unpaired = self.pairingManager.pairingState else { return }
+                self.pairingManager.startPairing()
+            }
         }
     }
 
@@ -121,6 +138,16 @@ class MultipeerManager: NSObject, ObservableObject, MacMultipeerManaging {
         }
         do {
             try messageSigner.verifySecureMessage(message)
+        } catch SecurityError.unknownPeer {
+            Log.security.error("Message from unknown peer — stale pairing, forcing re-pair")
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.pairingManager.unpair()
+                if !self.session.connectedPeers.isEmpty {
+                    self.pairingManager.startPairing()
+                }
+            }
+            return
         } catch {
             Log.security.error("Message verification failed: \(error.localizedDescription, privacy: .public)")
             return
@@ -154,8 +181,22 @@ extension MultipeerManager: MCSessionDelegate {
         Log.mpc.info("Peer \(peerID.displayName, privacy: .public) state: \(stateStr, privacy: .public)")
         DispatchQueue.main.async { [weak self] in
             self?.isConnected = state == .connected
-            // Initiate pairing handshake on new connection (if not already paired)
-            if state == .connected, let self, !self.pairingManager.isPaired {
+            guard let self else { return }
+            if state == .notConnected {
+                // If a pairing handshake was in progress when the peer dropped,
+                // cancel only early phases so startPairing() isn't blocked on reconnect.
+                // Late phases (.confirming/.deriving) may already have stored keys via
+                // finalizePairing(), so don't wipe them — let the timeout handle cleanup.
+                if case .pairing(let phase) = self.pairingManager.pairingState {
+                    switch phase {
+                    case .waitingForPeer, .exchangingKeys, .displayingCode:
+                        Log.pairing.info("Peer disconnected mid-handshake — resetting pairing state")
+                        self.pairingManager.cancelPairing()
+                    case .confirming, .deriving:
+                        Log.pairing.info("Peer disconnected during confirmation — not canceling")
+                    }
+                }
+            } else if state == .connected, !self.pairingManager.isPaired {
                 Log.pairing.info("New peer connected, starting pairing handshake")
                 self.pairingManager.startPairing()
             }

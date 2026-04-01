@@ -38,7 +38,8 @@ class UnlockConfirmationManager: ObservableObject {
     }
 
     /// Testable init — accepts injectable dependencies.
-    init(notificationCenter: any NotificationCentering, biometricChecker: any BiometricChecking = BiometricRecencyChecker()) {
+    init(notificationCenter: any NotificationCentering, biometricChecker: (any BiometricChecking)? = nil) {
+        let biometricChecker = biometricChecker ?? BiometricRecencyChecker()
         self.notificationCenter = notificationCenter
         self.biometricChecker = biometricChecker
         requiresConfirmation = UserDefaults.standard.object(forKey: "requiresConfirmation").map {

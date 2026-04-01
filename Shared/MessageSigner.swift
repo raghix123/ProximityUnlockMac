@@ -12,6 +12,13 @@ class MessageSigner {
         self.lastReceivedCounter = keyStore.getReceiveCounter()
     }
 
+    /// Reload the receive counter from persistent storage.
+    /// Must be called after pairing finalizes (which resets the counter to 0)
+    /// so that the in-memory value matches the new counter baseline.
+    func resetReceiveCounter() {
+        lastReceivedCounter = keyStore.getReceiveCounter()
+    }
+
     // MARK: - Signing
 
     /// Create a SecureMessage by signing the command and metadata

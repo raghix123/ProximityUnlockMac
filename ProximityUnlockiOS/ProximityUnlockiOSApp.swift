@@ -36,6 +36,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        #if DEBUG
+        SecureKeyStore.shared.deleteAllData()
+        #endif
         UNUserNotificationCenter.current().delegate = self
         return true
     }

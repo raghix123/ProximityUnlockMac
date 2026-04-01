@@ -49,8 +49,10 @@ class MultipeerManager: NSObject, ObservableObject {
         pairingManager.sendMessage = { [weak self] data in
             self?.sendRaw(data)
         }
-        pairingManager.onPaired = {
+        pairingManager.onPaired = { [weak self] in
             Log.pairing.info("Pairing complete — operational channel active")
+            // Sync the in-memory replay counter with the just-reset persistent value (0).
+            self?.messageSigner.resetReceiveCounter()
         }
     }
 
@@ -121,6 +123,13 @@ class MultipeerManager: NSObject, ObservableObject {
         }
         do {
             try messageSigner.verifySecureMessage(message)
+        } catch SecurityError.unknownPeer {
+            Log.security.error("Message from unknown peer — stale pairing, clearing state")
+            DispatchQueue.main.async { [weak self] in
+                self?.pairingManager.unpair()
+                // iPhone is responder — Mac will initiate re-pairing on reconnect
+            }
+            return
         } catch {
             Log.security.error("Message verification failed: \(error.localizedDescription, privacy: .public)")
             return
@@ -151,7 +160,19 @@ extension MultipeerManager: MCSessionDelegate {
         }
         Log.mpc.info("Peer \(peerID.displayName, privacy: .public) state: \(stateStr, privacy: .public)")
         DispatchQueue.main.async { [weak self] in
-            self?.isConnected = state == .connected
+            guard let self else { return }
+            self.isConnected = state == .connected
+            // If a pairing handshake was in progress when the peer dropped,
+            // cancel only early phases. Late phases may have stored keys already.
+            if state == .notConnected, case .pairing(let phase) = self.pairingManager.pairingState {
+                switch phase {
+                case .waitingForPeer, .exchangingKeys, .displayingCode:
+                    Log.pairing.info("Peer disconnected mid-handshake — resetting pairing state")
+                    self.pairingManager.cancelPairing()
+                case .confirming, .deriving:
+                    Log.pairing.info("Peer disconnected during confirmation — not canceling")
+                }
+            }
         }
     }
 

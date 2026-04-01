@@ -46,7 +46,7 @@ struct SettingsView: View {
                     .onChange(of: lockWhenFar) { new in
                         UserDefaults.standard.set(new, forKey: "lockWhenFar")
                     }
-            }
+                }
 
             // MARK: Confirmation status
             if monitor.awaitingConfirmation {

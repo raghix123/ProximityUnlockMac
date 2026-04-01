@@ -1,4 +1,5 @@
 import Foundation
+import os
 import Security
 
 /// Manages all Keychain storage and retrieval for pairing keys, identity keys, and password encryption.
@@ -131,6 +132,25 @@ class SecureKeyStore {
 
     func setPairedPeerDisplayName(_ name: String) {
         UserDefaults.standard.set(name, forKey: "pairedPeerDisplayName")
+    }
+
+    // MARK: - Full Reset (Debug)
+
+    /// Delete ALL stored data — identity keys, pairing state, counters, password.
+    /// Used to ensure a clean slate on debug builds.
+    func deleteAllData() {
+        // Delete every Keychain item under our service
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service
+        ]
+        SecItemDelete(query as CFDictionary)
+
+        // Clear UserDefaults keys
+        for key in ["sendCounter", "receiveCounter", "pairedPeerDisplayName"] {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+        Log.security.info("Deleted all stored data (debug reset)")
     }
 
     // MARK: - Private Helpers

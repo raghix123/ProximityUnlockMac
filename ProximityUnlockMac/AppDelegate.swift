@@ -3,6 +3,7 @@ import Combine
 import os
 import SwiftUI
 
+@MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     var proximityMonitor: ProximityMonitor
@@ -10,6 +11,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
 
     override init() {
+        #if DEBUG
+        SecureKeyStore.shared.deleteAllData()
+        #endif
         self.proximityMonitor = ProximityMonitor()
         super.init()
     }

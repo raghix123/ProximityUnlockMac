@@ -229,9 +229,16 @@ class PairingManager: ObservableObject {
     }
 
     private func handlePairingConfirmation(_ confirmation: PairingConfirmation) {
-        // iPhone's confirmation — verify their signature
+        // Post-verification: finalizePairing() already transitioned to .paired and stored
+        // keys. This method verifies iPhone's ECDSA signature as a security cross-check.
+        // If ephemeral state was already cleared (e.g., MPC reconnected after finalize),
+        // skip silently — we're already paired and operational.
         guard let peerIdentityKeyData = peerIdentityPublicKeyData,
               let myIdentityKey = try? keyManager.getIdentityPublicKey() else {
+            if isPaired {
+                Log.pairing.info("Received late confirmation after ephemeral state cleared — already paired")
+                return
+            }
             failPairing(SecurityError.unknownPeer)
             return
         }
@@ -245,18 +252,14 @@ class PairingManager: ObservableObject {
         guard let peerPublicKey = try? P256.Signing.PublicKey(x963Representation: peerIdentityKeyData),
               let signature = try? P256.Signing.ECDSASignature(derRepresentation: confirmation.identitySignature),
               peerPublicKey.isValidSignature(signature, for: SHA256.hash(data: dataToVerify)) else {
-            Log.pairing.error("Peer pairing confirmation signature invalid")
-            failPairing(SecurityError.invalidSignature)
+            Log.pairing.error("Peer pairing confirmation signature invalid — unpairing")
+            // Keys are already in Keychain from finalizePairing(), so use unpair() (not
+            // failPairing()) to clean up both Keychain and in-memory state.
+            unpair()
             return
         }
 
         Log.pairing.info("Peer confirmation signature verified")
-        // Pairing already finalized in sendConfirmation() — just mark as paired
-        if let _ = keyStore.retrievePairedPeerPublicKey() {
-            pairingState = .paired(peerName: peerDisplayName)
-            pairingTimeout?.invalidate()
-            onPaired?()
-        }
     }
 
     private func finalizePairing(sharedSecret: SharedSecret) {
@@ -276,7 +279,16 @@ class PairingManager: ObservableObject {
             // Reset counters for new pairing
             keyStore.setSendCounter(1)
             keyStore.setReceiveCounter(0)
+            // Cancel timeout so it doesn't fire failPairing() after a successful pair.
+            pairingTimeout?.invalidate()
+            pairingTimeout = nil
+            // Transition to .paired immediately — matching iOS behavior.
+            // Without this, pairingState stays .pairing(.confirming) until iPhone's
+            // confirmation arrives, and any MPC disconnect during that window would
+            // reset pairing via the disconnect handler, creating a stuck loop.
+            pairingState = .paired(peerName: peerDisplayName)
             Log.pairing.info("Pairing finalized with \(self.peerDisplayName, privacy: .public)")
+            onPaired?()
         } catch {
             failPairing(error)
         }

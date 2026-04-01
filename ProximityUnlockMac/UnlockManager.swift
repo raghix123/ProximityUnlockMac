@@ -8,21 +8,62 @@ import os
 /// Unlocking via CGEvent requires Accessibility permission, which the user
 /// must grant in System Settings > Privacy & Security > Accessibility.
 /// The app must NOT be sandboxed — CGEvent posting and pmset require it.
+///
+/// Lock state tracking: macOS 26 removed CGSSessionScreenIsLocked from
+/// CGSessionCopyCurrentDictionary, so we track state via distributed notifications
+/// (com.apple.screenIsLocked / com.apple.screenIsUnlocked) instead.
 class UnlockManager {
+
+    // MARK: - Lock State (notification-tracked)
+
+    private var _isScreenLocked: Bool = false
+    private var lockObserver: NSObjectProtocol?
+    private var unlockObserver: NSObjectProtocol?
+
+    init() {
+        // Seed initial state from CGSession (works on older macOS; falls back to false on macOS 26+)
+        if let dict = CGSessionCopyCurrentDictionary() as? [String: Any] {
+            _isScreenLocked = dict["CGSSessionScreenIsLocked"] as? Bool ?? false
+        }
+
+        let nc = DistributedNotificationCenter.default()
+        lockObserver = nc.addObserver(
+            forName: NSNotification.Name("com.apple.screenIsLocked"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Log.unlock.info("Screen lock notification received")
+            self?._isScreenLocked = true
+        }
+        unlockObserver = nc.addObserver(
+            forName: NSNotification.Name("com.apple.screenIsUnlocked"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Log.unlock.info("Screen unlock notification received")
+            self?._isScreenLocked = false
+        }
+    }
+
+    deinit {
+        if let obs = lockObserver   { DistributedNotificationCenter.default().removeObserver(obs) }
+        if let obs = unlockObserver { DistributedNotificationCenter.default().removeObserver(obs) }
+    }
 
     // MARK: - Public API
 
     func isScreenLocked() -> Bool {
-        guard let dict = CGSessionCopyCurrentDictionary() as? [String: Any] else { return false }
-        let locked = dict["CGSSessionScreenIsLocked"] as? Bool ?? false
-        Log.unlock.debug("isScreenLocked: \(locked, privacy: .public)")
-        return locked
+        Log.unlock.debug("isScreenLocked: \(self._isScreenLocked, privacy: .public)")
+        return _isScreenLocked
     }
 
     func unlockScreen() {
         Log.unlock.info("Unlocking screen")
         wakeDisplay()
-        guard let password = KeychainHelper.shared.getPassword() else { return }
+        guard let password = KeychainHelper.shared.getPassword() else {
+            Log.unlock.warning("No password stored — cannot unlock")
+            return
+        }
 
         // Poll until the login window is ready (up to 5 seconds), then type.
         waitForLoginWindow(timeout: 5.0) {
@@ -30,18 +71,32 @@ class UnlockManager {
             // Small delay to let the click register before typing.
             usleep(200_000) // 200ms
             self.typeStringAndSubmit(password)
+            // Optimistically mark as unlocked — the distributed notification will
+            // confirm once the system actually unlocks.
+            self._isScreenLocked = false
         }
     }
 
     func lockScreen() {
         Log.unlock.info("Locking screen")
-        let task = Process()
-        task.launchPath = "/usr/bin/pmset"
-        task.arguments = ["displaysleepnow"]
-        do {
-            try task.run()
-        } catch {
-            Log.unlock.error("Failed to lock screen: \(error.localizedDescription, privacy: .public)")
+        // SACLockScreenImmediate (private ScreenSaver framework) is the correct
+        // programmatic lock on macOS 13+. CGSession -suspend was removed in macOS 26.
+        let frameworkPath = "/System/Library/PrivateFrameworks/ScreenSaver.framework/ScreenSaver"
+        if let handle = dlopen(frameworkPath, RTLD_LAZY),
+           let sym = dlsym(handle, "SACLockScreenImmediate") {
+            typealias SACFunc = @convention(c) () -> Void
+            let lockFn = unsafeBitCast(sym, to: SACFunc.self)
+            lockFn()
+            // Set immediately — the distributed notification may not fire for programmatic
+            // locks on macOS 26, so we can't rely on it alone for state tracking.
+            _isScreenLocked = true
+        } else {
+            Log.unlock.warning("SACLockScreenImmediate unavailable, falling back to pmset")
+            let task = Process()
+            task.launchPath = "/usr/bin/pmset"
+            task.arguments = ["displaysleepnow"]
+            try? task.run()
+            _isScreenLocked = true
         }
     }
 
@@ -57,16 +112,13 @@ class UnlockManager {
         )
     }
 
-    /// Polls `CGSessionCopyCurrentDictionary` until the screen reports as locked
-    /// with the display awake, then fires the completion on a background thread.
+    /// Polls `_isScreenLocked` (notification-tracked) until the lock screen is up,
+    /// then fires the completion on a background thread.
     private func waitForLoginWindow(timeout: TimeInterval, completion: @escaping () -> Void) {
         DispatchQueue.global(qos: .userInitiated).async {
             let deadline = Date().addingTimeInterval(timeout)
             while Date() < deadline {
-                // Once the session dict exists and the screen is locked,
-                // the login window should be accepting input.
-                if let dict = CGSessionCopyCurrentDictionary() as? [String: Any],
-                   dict["CGSSessionScreenIsLocked"] as? Bool == true {
+                if self._isScreenLocked {
                     Log.unlock.info("Login window detected")
                     // Extra settle time for the login window UI.
                     usleep(500_000) // 500ms

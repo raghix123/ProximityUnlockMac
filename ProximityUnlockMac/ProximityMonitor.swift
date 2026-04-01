@@ -104,6 +104,22 @@ class ProximityMonitor: ObservableObject {
                 self?.unlockManager.unlockScreen()
             }
         }
+        // Re-trigger unlock request when screen locks while phone is already near
+        // (e.g., idle auto-lock or remote lock command while proximity was already .near).
+        // Without this, transitionToNear never re-fires because proximityState stays .near.
+        DistributedNotificationCenter.default().addObserver(
+            forName: NSNotification.Name("com.apple.screenIsLocked"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, self.isEnabled, !self.isPaused, self.isPhoneDetected else { return }
+                guard self.proximityState == .near, !self.awaitingConfirmation else { return }
+                Log.proximity.info("Screen locked while phone was near — requesting unlock confirmation")
+                self.requestUnlockConfirmation()
+            }
+        }
+
         if isEnabled { multipeerManager.startBrowsing() }
     }
 
@@ -211,7 +227,7 @@ class ProximityMonitor: ObservableObject {
 
     // MARK: - Confirmation Flow
 
-    private func requestUnlockConfirmation() {
+    func requestUnlockConfirmation() {
         guard !awaitingConfirmation else { return }
         Log.proximity.info("Requesting unlock confirmation from iPhone")
         awaitingConfirmation = true
