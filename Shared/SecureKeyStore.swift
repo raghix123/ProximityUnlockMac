@@ -59,9 +59,10 @@ class SecureKeyStore {
         retrieveData(account: KeychainKey.pairedPeerIdentityPublicKey)
     }
 
-    /// Store the long-term shared key derived during pairing (32 bytes)
+    /// Store the long-term shared key derived during pairing (32 bytes).
+    /// Uses .afterFirstUnlock so it can be read while the screen is locked (needed to derive the password decryption key).
     func storePairedSharedKey(_ key: Data) throws {
-        try storeData(key, account: KeychainKey.pairedSharedKey)
+        try storeData(key, account: KeychainKey.pairedSharedKey, accessible: kSecAttrAccessibleAfterFirstUnlock)
     }
 
     /// Retrieve the long-term shared key
@@ -69,9 +70,10 @@ class SecureKeyStore {
         retrieveData(account: KeychainKey.pairedSharedKey)
     }
 
-    /// Store encrypted login password (AES-GCM combined representation)
+    /// Store encrypted login password (AES-GCM combined representation).
+    /// Uses .afterFirstUnlock so it can be read while the screen is locked (the unlock flow reads it while locked).
     func storeEncryptedPassword(_ ciphertext: Data) throws {
-        try storeData(ciphertext, account: KeychainKey.macLoginPasswordEncrypted)
+        try storeData(ciphertext, account: KeychainKey.macLoginPasswordEncrypted, accessible: kSecAttrAccessibleAfterFirstUnlock)
     }
 
     /// Retrieve encrypted login password
@@ -155,12 +157,12 @@ class SecureKeyStore {
 
     // MARK: - Private Helpers
 
-    private func storeData(_ data: Data, account: String) throws {
+    private func storeData(_ data: Data, account: String, accessible: CFString = kSecAttrAccessibleWhenUnlockedThisDeviceOnly) throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+            kSecAttrAccessible as String: accessible,
             kSecValueData as String: data
         ]
 
