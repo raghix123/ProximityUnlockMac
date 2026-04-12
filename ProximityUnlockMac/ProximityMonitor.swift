@@ -152,6 +152,17 @@ class ProximityMonitor: ObservableObject {
         if UserDefaults.standard.object(forKey: "requireConfirmation") != nil {
             requireConfirmation = UserDefaults.standard.bool(forKey: "requireConfirmation")
         }
+
+        // Validate threshold sanity: nearThreshold must be a stronger signal (less negative)
+        // than farThreshold. If stored values are inverted (a prior settings session may have
+        // dragged them backwards), reset both to sensible defaults so proximity detection works.
+        if nearThreshold <= farThreshold {
+            nearThreshold = -65
+            farThreshold = -80
+            UserDefaults.standard.set(nearThreshold, forKey: "nearThreshold")
+            UserDefaults.standard.set(farThreshold, forKey: "farThreshold")
+            Log.proximity.warning("Stored RSSI thresholds were inverted — reset to near=-65, far=-80")
+        }
     }
 
     // MARK: - RSSI Handling (internal so tests can call directly)
