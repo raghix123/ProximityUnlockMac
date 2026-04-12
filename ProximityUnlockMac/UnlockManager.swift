@@ -77,20 +77,6 @@ class UnlockManager {
         }
     }
 
-    /// Type the stored password into whatever UI element currently has keyboard focus.
-    /// Used by the proximity-gated keystroke injection feature (screen is NOT locked).
-    /// No mouse click — the caller is responsible for focus being on the right field.
-    func injectPassword() {
-        guard let password = KeychainHelper.shared.getPassword() else {
-            Log.unlock.warning("injectPassword: no password stored")
-            return
-        }
-        Log.unlock.info("Injecting password into focused field")
-        DispatchQueue.global(qos: .userInitiated).async {
-            self.typeStringAndSubmit(password)
-        }
-    }
-
     func lockScreen() {
         Log.unlock.info("Locking screen")
         // SACLockScreenImmediate (private ScreenSaver framework) is the correct

@@ -27,7 +27,6 @@ protocol UnlockManaging {
     func isScreenLocked() -> Bool
     func unlockScreen()
     func lockScreen()
-    func injectPassword()
 }
 
 extension UnlockManager: UnlockManaging {}

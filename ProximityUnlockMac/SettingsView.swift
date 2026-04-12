@@ -10,7 +10,6 @@ struct SettingsView: View {
     @State private var showPasswordEntry: Bool = false
     @State private var passwordMismatch: Bool = false
     @State private var isAccessibilityGranted: Bool = false
-    @State private var isInputMonitoringGranted: Bool = false
     @State private var lockWhenFar: Bool = false
 
     private var pairingManager: PairingManager? {
@@ -48,47 +47,6 @@ struct SettingsView: View {
                         UserDefaults.standard.set(new, forKey: "lockWhenFar")
                     }
                 }
-
-            // MARK: Keystroke Injection
-            Section("Password Injection (Unlocked Screen)") {
-                Toggle("Inject password when iPhone is nearby", isOn: $monitor.keystrokeInjectionEnabled)
-                    .disabled(!isInputMonitoringGranted)
-
-                if monitor.keystrokeInjectionEnabled {
-                    Toggle("Proximity Only (no trigger needed)", isOn: $monitor.proximityOnlyMode)
-
-                    if !monitor.proximityOnlyMode {
-                        HStack {
-                            Text("Trigger sequence")
-                            Spacer()
-                            TextField("e.g. wasd", text: $monitor.triggerSequence)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: 120)
-                                .multilineTextAlignment(.trailing)
-                        }
-                        Text("Type this sequence within 500 ms to inject the password into the focused field.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    if monitor.isArmed {
-                        Label("Armed — phone is near", systemImage: "bolt.fill")
-                            .foregroundStyle(.green)
-                    }
-                }
-
-                if !isInputMonitoringGranted {
-                    HStack {
-                        Label("Input Monitoring: Not Granted", systemImage: "xmark.circle.fill")
-                            .foregroundStyle(.red)
-                        Spacer()
-                        Button("Grant Access") { requestInputMonitoring() }
-                    }
-                    Text("Input Monitoring is required to detect the trigger sequence. Grant it in System Settings > Privacy & Security > Input Monitoring.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
 
             // MARK: Confirmation status
             if monitor.awaitingConfirmation {
@@ -198,30 +156,6 @@ struct SettingsView: View {
                 Text("Accessibility is required for automatic password entry. Grant it in System Settings > Privacy & Security > Accessibility.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-
-                HStack {
-                    Label(
-                        isInputMonitoringGranted ? "Input Monitoring: Granted" : "Input Monitoring: Not Granted",
-                        systemImage: isInputMonitoringGranted ? "checkmark.circle.fill" : "xmark.circle.fill"
-                    )
-                    .foregroundStyle(isInputMonitoringGranted ? .green : .red)
-                    Spacer()
-                    if !isInputMonitoringGranted {
-                        HStack(spacing: 8) {
-                            Button(action: { requestInputMonitoring() }) {
-                                Text("Grant Access")
-                            }
-                            Button(action: { isInputMonitoringGranted = GlobalKeyMonitor.hasInputMonitoringPermission }) {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(.caption)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-                Text("Input Monitoring is required for the keystroke trigger sequence. Grant it in System Settings > Privacy & Security > Input Monitoring.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
@@ -250,7 +184,6 @@ struct SettingsView: View {
     private func refresh() {
         hasPassword = KeychainHelper.shared.hasPassword()
         isAccessibilityGranted = AXIsProcessTrusted()
-        isInputMonitoringGranted = GlobalKeyMonitor.hasInputMonitoringPermission
         lockWhenFar = UserDefaults.standard.bool(forKey: "lockWhenFar")
     }
 
@@ -265,13 +198,6 @@ struct SettingsView: View {
         confirmPassword = ""
         passwordMismatch = false
         showPasswordEntry = false
-    }
-
-    private func requestInputMonitoring() {
-        GlobalKeyMonitor.requestInputMonitoringPermission()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            isInputMonitoringGranted = GlobalKeyMonitor.hasInputMonitoringPermission
-        }
     }
 
     private func requestAccessibility() {

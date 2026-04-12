@@ -180,7 +180,7 @@ extension MultipeerManager: MCSessionDelegate {
         // Try pairing message first
         if (try? JSONDecoder().decode(PairingMessageType.self, from: data)) != nil {
             Log.pairing.info("Routing pairing message from \(peerID.displayName, privacy: .public)")
-            Task { @MainActor [weak self] in
+            DispatchQueue.main.async { [weak self] in
                 self?.pairingManager.handlePairingMessage(data)
             }
             return

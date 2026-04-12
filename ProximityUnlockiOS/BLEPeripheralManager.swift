@@ -42,6 +42,7 @@ class BLEPeripheralManager: NSObject, ObservableObject {
     func startAdvertising() {
         Log.ble.info("Starting BLE advertising (RSSI beacon)")
         guard peripheralManager?.state == .poweredOn else { return }
+        guard !isAdvertising else { return }
         // No characteristics — advertisement-only service for RSSI proximity sensing
         let service = CBMutableService(type: BLEConstants.serviceUUID, primary: true)
         peripheralManager?.add(service)
