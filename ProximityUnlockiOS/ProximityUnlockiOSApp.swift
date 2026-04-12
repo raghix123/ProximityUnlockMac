@@ -3,10 +3,9 @@ import UserNotifications
 
 @main
 struct ProximityUnlockiOSApp: App {
-    @StateObject private var advertiser = ProximityAdvertiser()
-
-    // Handle notification action responses (Approve/Deny from background notification)
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @StateObject private var advertiser = ProximityAdvertiser()
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some Scene {
         WindowGroup {
@@ -14,20 +13,20 @@ struct ProximityUnlockiOSApp: App {
                 .environmentObject(advertiser)
                 .background(Color(.systemGroupedBackground).ignoresSafeArea())
                 .onAppear {
-                    // Pass advertiser to AppDelegate so notification responses can call confirm/deny
                     appDelegate.advertiser = advertiser
-                    // Make the window background match the grouped list background so the
-                    // status-bar and home-indicator regions don't show as black bars.
-                    UIApplication.shared.connectedScenes
-                        .compactMap { $0 as? UIWindowScene }
-                        .flatMap { $0.windows }
-                        .forEach { $0.backgroundColor = UIColor.systemGroupedBackground }
+                }
+                .fullScreenCover(isPresented: Binding(
+                    get: { !hasCompletedOnboarding },
+                    set: { if !$0 { hasCompletedOnboarding = true } }
+                )) {
+                    OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
                 }
         }
     }
 }
 
-/// Handles notification action callbacks (user taps "Unlock Mac" or "Deny" in notification).
+/// Handles notification action callbacks and sets the window background
+/// synchronously before SwiftUI's first render to prevent black bars.
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
 
     var advertiser: ProximityAdvertiser?
@@ -40,6 +39,18 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         SecureKeyStore.shared.deleteAllData()
         #endif
         UNUserNotificationCenter.current().delegate = self
+
+        // Set window background before first render so the status bar and
+        // home indicator regions never flash black. UIWindow.didBecomeKeyNotification
+        // fires as the window becomes key — earlier than SwiftUI's .onAppear.
+        NotificationCenter.default.addObserver(
+            forName: UIWindow.didBecomeKeyNotification,
+            object: nil,
+            queue: .main
+        ) { notification in
+            (notification.object as? UIWindow)?.backgroundColor = UIColor.systemGroupedBackground
+        }
+
         return true
     }
 
