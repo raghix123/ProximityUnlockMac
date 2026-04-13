@@ -9,19 +9,30 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var proximityMonitor: ProximityMonitor
     private var cancellable: AnyCancellable?
     private var settingsWindow: NSWindow?
+    private var onboardingWindow: NSWindow?
+    private var hasCompletedOnboarding: Bool
 
     override init() {
         #if DEBUG
         SecureKeyStore.shared.deleteAllData()
         #endif
         self.proximityMonitor = ProximityMonitor()
+        self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedMacOnboarding")
         super.init()
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Log.ui.info("App launched")
         NSApp.setActivationPolicy(.accessory)
-        setupStatusBar()
+
+        // Show onboarding on first launch
+        if !hasCompletedOnboarding {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.showOnboarding()
+            }
+        } else {
+            setupStatusBar()
+        }
 
         cancellable = proximityMonitor.objectWillChange.sink { [weak self] in
             DispatchQueue.main.async { self?.updateStatusBarIcon() }
@@ -98,6 +109,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    private func showOnboarding() {
+        Log.ui.info("Showing onboarding")
+        if onboardingWindow == nil {
+            let view = MacOnboardingView { [weak self] in
+                self?.completeOnboarding()
+            }
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 500, height: 480),
+                styleMask: [.titled, .closable],
+                backing: .buffered,
+                defer: false
+            )
+            window.title = "Welcome to ProximityUnlock"
+            window.contentView = NSHostingView(rootView: view)
+            window.center()
+            window.isReleasedWhenClosed = false
+            onboardingWindow = window
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        onboardingWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    private func completeOnboarding() {
+        Log.ui.info("Onboarding completed")
+        UserDefaults.standard.set(true, forKey: "hasCompletedMacOnboarding")
+        hasCompletedOnboarding = true
+        onboardingWindow?.close()
+        onboardingWindow = nil
+        setupStatusBar()
     }
 }
 
