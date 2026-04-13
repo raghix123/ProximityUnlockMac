@@ -117,6 +117,22 @@ class PairingManager: ObservableObject {
         failPairing(SecurityError.userCancelled)
     }
 
+    /// Called when the MPC peer disconnects mid-handshake (network drop, not user action).
+    /// Silently resets state so the next reconnect can start a fresh handshake without
+    /// showing a confusing "cancelled by user" error.
+    func handlePeerDisconnected() {
+        guard case .pairing = pairingState else { return }
+        Log.pairing.info("Connection lost mid-pairing — resetting for retry")
+        pairingTimeout?.invalidate()
+        pairingTimeout = nil
+        pairingState = .unpaired
+        ephemeralKey = nil
+        peerEphemeralPublicKeyData = nil
+        peerIdentityPublicKeyData = nil
+        derivedSharedSecret = nil
+        // pairingError intentionally NOT set — this is a network drop, not a failure
+    }
+
     /// Called when user unpairing from settings.
     func unpair() {
         Log.pairing.info("Unpairing")

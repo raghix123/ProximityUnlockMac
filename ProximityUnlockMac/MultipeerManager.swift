@@ -190,8 +190,8 @@ extension MultipeerManager: MCSessionDelegate {
                 if case .pairing(let phase) = self.pairingManager.pairingState {
                     switch phase {
                     case .waitingForPeer, .exchangingKeys, .displayingCode:
-                        Log.pairing.info("Peer disconnected mid-handshake — resetting pairing state")
-                        self.pairingManager.cancelPairing()
+                        Log.pairing.info("Peer disconnected mid-handshake — resetting for retry")
+                        self.pairingManager.handlePeerDisconnected()
                     case .confirming, .deriving:
                         Log.pairing.info("Peer disconnected during confirmation — not canceling")
                     }
