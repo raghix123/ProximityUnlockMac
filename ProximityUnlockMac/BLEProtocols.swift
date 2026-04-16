@@ -1,6 +1,14 @@
 import CoreBluetooth
 import Foundation
 
+/// A Bluetooth device discovered during scanning.
+struct DiscoveredDevice: Identifiable, Equatable {
+    let id: UUID       // CBPeripheral.identifier (stable within a session)
+    let name: String
+    var rssi: Int
+    var lastSeen: Date
+}
+
 // MARK: - CBCentralManager Protocol (for testability)
 
 /// Abstracts CBCentralManager so tests can inject a mock.
@@ -16,9 +24,10 @@ extension CBCentralManager: CBCentralManagerProtocol {}
 
 // MARK: - High-Level BLE Central Protocol
 
-/// M7+: BLE is RSSI-only. No command writing. The manager handles scanning, connection
-/// for RSSI polling, device found/lost events, and RSSI updates.
-protocol BLECentralManaging: AnyObject {}
+/// Manages BLE scanning and RSSI tracking for the user-selected device.
+protocol BLECentralManaging: AnyObject {
+    var selectedDeviceName: String? { get set }
+}
 
 // MARK: - UnlockManager Protocol
 

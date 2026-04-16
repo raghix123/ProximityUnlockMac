@@ -10,24 +10,44 @@ struct SettingsView: View {
     @State private var showPasswordEntry: Bool = false
     @State private var passwordMismatch: Bool = false
     @State private var isAccessibilityGranted: Bool = false
-    @State private var lockWhenFar: Bool = false
-
-    private var pairingManager: PairingManager? {
-        (monitor.multipeerManager as? MultipeerManager)?.pairingManager
-    }
 
     var body: some View {
         Form {
-            // MARK: Pairing
-            if let pm = pairingManager {
-                PairingSectionView(pairingManager: pm)
+            // MARK: Device Selection
+            Section("Your iPhone") {
+                if monitor.discoveredDevices.isEmpty {
+                    HStack(spacing: 8) {
+                        ProgressView().scaleEffect(0.7)
+                        Text("Scanning for Bluetooth devices…")
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    Picker("Track device", selection: Binding(
+                        get: { monitor.selectedDeviceName },
+                        set: { monitor.selectedDeviceName = $0 }
+                    )) {
+                        Text("Not selected").tag(String?.none)
+                        ForEach(monitor.discoveredDevices) { device in
+                            Text("\(device.name)  (\(device.rssi) dBm)")
+                                .tag(Optional(device.name))
+                        }
+                    }
+                }
+                Text("Select your iPhone from nearby Bluetooth devices. The Mac will lock when it moves away and unlock when it comes back.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             // MARK: Status
             Section("Status") {
-                LabeledContent("iPhone") {
-                    Text(monitor.isPhoneDetected ? "Connected" : "Searching...")
-                        .foregroundStyle(monitor.isPhoneDetected ? .green : .secondary)
+                LabeledContent("Device") {
+                    if let name = monitor.selectedDeviceName {
+                        Text(monitor.isPhoneDetected ? name : "Searching…")
+                            .foregroundStyle(monitor.isPhoneDetected ? .green : .secondary)
+                    } else {
+                        Text("No device selected")
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 if monitor.isPhoneDetected {
                     LabeledContent("Signal strength", value: "\(monitor.rssi) dBm")
@@ -41,19 +61,6 @@ struct SettingsView: View {
             // MARK: General
             Section("General") {
                 Toggle("Enable Proximity Unlock", isOn: $monitor.isEnabled)
-                Toggle("Require iPhone confirmation to unlock", isOn: $monitor.requireConfirmation)
-                Toggle("Lock screen when iPhone moves away", isOn: $lockWhenFar)
-                    .onChange(of: lockWhenFar) { new in
-                        UserDefaults.standard.set(new, forKey: "lockWhenFar")
-                    }
-                }
-
-            // MARK: Confirmation status
-            if monitor.awaitingConfirmation {
-                Section {
-                    Label("Waiting for iPhone to confirm unlock...", systemImage: "iphone.and.arrow.forward")
-                        .foregroundStyle(.orange)
-                }
             }
 
             // MARK: Sensitivity
@@ -85,49 +92,43 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
-            // MARK: Password (gated on pairing)
+            // MARK: Password
             Section("Unlock Password") {
-                if pairingManager?.isPaired == true {
-                    if hasPassword {
-                        Label("Password saved (encrypted)", systemImage: "checkmark.seal.fill")
-                            .foregroundStyle(.green)
-                        HStack {
-                            Button("Change Password") { showPasswordEntry = true }
-                            Button("Remove", role: .destructive) {
-                                KeychainHelper.shared.deletePassword()
-                                hasPassword = false
-                            }
-                        }
-                    } else {
-                        Text("Save your Mac login password so the app can type it automatically when your iPhone is nearby.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Button("Set Password") { showPasswordEntry = true }
-                    }
-
-                    if showPasswordEntry {
-                        SecureField("Password", text: $password)
-                        SecureField("Confirm Password", text: $confirmPassword)
-                        if passwordMismatch {
-                            Label("Passwords do not match", systemImage: "xmark.circle")
-                                .foregroundStyle(.red)
-                                .font(.caption)
-                        }
-                        HStack {
-                            Button("Save") { savePassword() }
-                                .disabled(password.isEmpty)
-                            Button("Cancel") {
-                                password = ""
-                                confirmPassword = ""
-                                passwordMismatch = false
-                                showPasswordEntry = false
-                            }
+                if hasPassword {
+                    Label("Password saved (encrypted)", systemImage: "checkmark.seal.fill")
+                        .foregroundStyle(.green)
+                    HStack {
+                        Button("Change Password") { showPasswordEntry = true }
+                        Button("Remove", role: .destructive) {
+                            KeychainHelper.shared.deletePassword()
+                            hasPassword = false
                         }
                     }
                 } else {
-                    Label("Pair with iPhone first to enable secure password storage.", systemImage: "lock.iphone")
-                        .foregroundStyle(.secondary)
+                    Text("Save your Mac login password so the app can type it automatically when your iPhone is nearby.")
                         .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button("Set Password") { showPasswordEntry = true }
+                }
+
+                if showPasswordEntry {
+                    SecureField("Password", text: $password)
+                    SecureField("Confirm Password", text: $confirmPassword)
+                    if passwordMismatch {
+                        Label("Passwords do not match", systemImage: "xmark.circle")
+                            .foregroundStyle(.red)
+                            .font(.caption)
+                    }
+                    HStack {
+                        Button("Save") { savePassword() }
+                            .disabled(password.isEmpty)
+                        Button("Cancel") {
+                            password = ""
+                            confirmPassword = ""
+                            passwordMismatch = false
+                            showPasswordEntry = false
+                        }
+                    }
                 }
             }
 
@@ -153,13 +154,13 @@ struct SettingsView: View {
                         }
                     }
                 }
-                Text("Accessibility is required for automatic password entry. Grant it in System Settings > Privacy & Security > Accessibility.")
+                Text("Accessibility is required for automatic password entry.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .frame(width: 440, height: 720)
+        .frame(width: 440, height: 620)
         .onAppear { refresh() }
     }
 
@@ -184,7 +185,6 @@ struct SettingsView: View {
     private func refresh() {
         hasPassword = KeychainHelper.shared.hasPassword()
         isAccessibilityGranted = AXIsProcessTrusted()
-        lockWhenFar = UserDefaults.standard.bool(forKey: "lockWhenFar")
     }
 
     private func savePassword() {
@@ -201,98 +201,10 @@ struct SettingsView: View {
     }
 
     private func requestAccessibility() {
-        // Open System Settings directly to Privacy & Security > Accessibility
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-            NSWorkspace.shared.open(url)
-        }
-        // Re-check after a short delay (user may have just granted it).
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        AXIsProcessTrustedWithOptions(options)
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             isAccessibilityGranted = AXIsProcessTrusted()
         }
-    }
-}
-
-// MARK: - Pairing Section
-
-private struct PairingSectionView: View {
-    @ObservedObject var pairingManager: PairingManager
-
-    var body: some View {
-        Section("Pairing") {
-            switch pairingManager.pairingState {
-            case .unpaired:
-                Label("Not paired with any iPhone", systemImage: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
-                Text("Pairing starts automatically when your iPhone (with ProximityUnlock) is nearby.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-            case .pairing(let phase):
-                PairingPhaseView(phase: phase, pairingManager: pairingManager)
-
-            case .paired(let peerName):
-                Label("Paired with \(peerName)", systemImage: "checkmark.shield.fill")
-                    .foregroundStyle(.green)
-                Button("Unpair", role: .destructive) {
-                    pairingManager.unpair()
-                }
-            }
-
-            if let error = pairingManager.pairingError {
-                Label(error, systemImage: "xmark.circle.fill")
-                    .foregroundStyle(.red)
-                    .font(.caption)
-            }
-        }
-    }
-}
-
-private struct PairingPhaseView: View {
-    let phase: PairingPhase
-    let pairingManager: PairingManager
-
-    var body: some View {
-        switch phase {
-        case .waitingForPeer, .exchangingKeys:
-            HStack(spacing: 8) {
-                ProgressView().scaleEffect(0.7)
-                Text("Exchanging keys with iPhone…")
-                    .foregroundStyle(.secondary)
-            }
-
-        case .displayingCode(let code):
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Compare this code with your iPhone", systemImage: "lock.shield")
-                    .fontWeight(.semibold)
-                Text("If both devices show the same 6-digit code, tap Confirm on both to complete pairing.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(formatCode(code))
-                    .font(.system(size: 32, weight: .bold, design: .monospaced))
-                    .padding(.vertical, 4)
-                HStack(spacing: 12) {
-                    Button("Confirm Pairing") {
-                        pairingManager.confirmCode()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    Button("Cancel", role: .destructive) {
-                        pairingManager.cancelPairing()
-                    }
-                }
-            }
-
-        case .confirming, .deriving:
-            HStack(spacing: 8) {
-                ProgressView().scaleEffect(0.7)
-                Text("Confirming pairing…")
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private func formatCode(_ code: String) -> String {
-        let clean = code.filter { $0.isNumber }
-        guard clean.count == 6 else { return code }
-        return String(clean.prefix(3)) + " " + String(clean.suffix(3))
     }
 }

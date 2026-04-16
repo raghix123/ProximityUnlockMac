@@ -6,10 +6,6 @@ struct MacOnboardingView: View {
     let onComplete: () -> Void
     @State private var currentStep = 0
 
-    private var pairingManager: PairingManager? {
-        (monitor.multipeerManager as? MultipeerManager)?.pairingManager
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             // Header
@@ -29,16 +25,12 @@ struct MacOnboardingView: View {
 
             // Content area
             VStack(alignment: .leading, spacing: 16) {
-                if currentStep == 0 {
-                    Step0Welcome()
-                } else if currentStep == 1 {
-                    Step1Accessibility()
-                } else if currentStep == 2 {
-                    Step2Pairing(pairingManager: pairingManager)
-                } else if currentStep == 3 {
-                    Step3Password(pairingManager: pairingManager)
-                } else {
-                    Step4Done()
+                switch currentStep {
+                case 0: Step0Welcome()
+                case 1: Step1DeviceSelect(monitor: monitor)
+                case 2: Step2Accessibility()
+                case 3: Step3Password()
+                default: Step4Done()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -50,18 +42,14 @@ struct MacOnboardingView: View {
             // Footer
             HStack(spacing: 12) {
                 if currentStep > 0 {
-                    Button("Back") {
-                        withAnimation { currentStep -= 1 }
-                    }
+                    Button("Back") { withAnimation { currentStep -= 1 } }
                 }
                 Spacer()
                 if currentStep < 4 {
                     Button("Skip") { onComplete() }
                         .foregroundStyle(.secondary)
-                    Button(currentStep < 4 ? "Next" : "Get Started") {
-                        withAnimation { currentStep += 1 }
-                    }
-                    .buttonStyle(.borderedProminent)
+                    Button("Next") { withAnimation { currentStep += 1 } }
+                        .buttonStyle(.borderedProminent)
                 } else {
                     Button("Get Started") { onComplete() }
                         .buttonStyle(.borderedProminent)
@@ -90,7 +78,7 @@ private struct Step0Welcome: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Smart Proximity Detection")
                         .font(.headline)
-                    Text("Your Mac unlocks automatically when your iPhone gets close.")
+                    Text("Your Mac locks and unlocks based on iPhone proximity — no app required on iPhone.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -101,28 +89,121 @@ private struct Step0Welcome: View {
                     icon: "iphone.radiowaves.left.and.right",
                     color: .blue,
                     title: "Bluetooth Sensing",
-                    description: "Low-energy Bluetooth detects proximity"
+                    description: "Low-energy Bluetooth detects your iPhone's proximity"
                 )
                 FeatureRow(
-                    icon: "faceid",
+                    icon: "lock.fill",
+                    color: .orange,
+                    title: "Auto Lock",
+                    description: "Mac locks when you walk away with your iPhone"
+                )
+                FeatureRow(
+                    icon: "lock.open.fill",
                     color: .green,
-                    title: "Biometric Protection",
-                    description: "Face ID approves each unlock"
-                )
-                FeatureRow(
-                    icon: "wifi",
-                    color: .purple,
-                    title: "Secure & Private",
-                    description: "Everything stays on your local network"
+                    title: "Auto Unlock",
+                    description: "Mac unlocks automatically when you return"
                 )
             }
         }
     }
 }
 
-// MARK: - Step 1: Accessibility Permissions
+// MARK: - Step 1: Select Your iPhone
 
-private struct Step1Accessibility: View {
+private struct Step1DeviceSelect: View {
+    @ObservedObject var monitor: ProximityMonitor
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Select Your iPhone")
+                .font(.headline)
+            Text("Choose your iPhone from the list of nearby Bluetooth devices:")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if monitor.discoveredDevices.isEmpty {
+                HStack(spacing: 12) {
+                    ProgressView().scaleEffect(0.8)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Scanning for devices…")
+                            .font(.subheadline.weight(.semibold))
+                        Text("Make sure Bluetooth is on and your iPhone is nearby.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(12)
+                .background(Color(.controlBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else {
+                VStack(spacing: 6) {
+                    ForEach(monitor.discoveredDevices) { device in
+                        DeviceRow(
+                            device: device,
+                            isSelected: monitor.selectedDeviceName == device.name
+                        ) {
+                            monitor.selectedDeviceName = device.name
+                        }
+                    }
+                }
+            }
+
+            if let selected = monitor.selectedDeviceName {
+                Label("Selected: \(selected)", systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                    .font(.caption.weight(.semibold))
+            }
+
+            Spacer()
+
+            Text("Can't see your iPhone? Make sure Bluetooth is enabled on both devices.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+private struct DeviceRow: View {
+    let device: DiscoveredDevice
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                Image(systemName: "iphone")
+                    .font(.title3)
+                    .foregroundStyle(isSelected ? .white : .blue)
+                    .frame(width: 32)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(device.name)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(isSelected ? .white : .primary)
+                    Text("\(device.rssi) dBm")
+                        .font(.caption)
+                        .foregroundStyle(isSelected ? .white.opacity(0.8) : .secondary)
+                }
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(.white)
+                        .font(.caption.weight(.bold))
+                }
+            }
+            .padding(10)
+            .background(isSelected ? Color.blue : Color(.controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Step 2: Accessibility Permissions
+
+private struct Step2Accessibility: View {
     @State private var accessibilityGranted = AXIsProcessTrusted()
     @State private var checkTimer: Timer?
 
@@ -130,7 +211,7 @@ private struct Step1Accessibility: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Grant Accessibility Permission")
                 .font(.headline)
-            Text("Required to monitor lock state and unlock your Mac:")
+            Text("Required for automatic password entry when unlocking:")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -181,7 +262,7 @@ private struct Step1Accessibility: View {
 
             Spacer()
 
-            Text("macOS will show an authentication dialog. Tap 'OK' and enter your password to grant access.")
+            Text("macOS will show an authentication dialog with the app pre-selected. Tap OK or use Touch ID to grant access.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -201,205 +282,72 @@ private struct Step1Accessibility: View {
     }
 }
 
-// MARK: - Step 2: Live Pairing
-
-private struct Step2Pairing: View {
-    let pairingManager: PairingManager?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Pair Your iPhone")
-                .font(.headline)
-            Text("Bring your iPhone close to this Mac:")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            if let pm = pairingManager {
-                LivePairingView(pairingManager: pm)
-            } else {
-                Text("Pairing manager unavailable")
-                    .foregroundStyle(.red)
-            }
-
-            Spacer()
-
-            Text("A 6-digit code will appear on both screens. Verify they match and confirm on both devices.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-}
-
-private struct LivePairingView: View {
-    @ObservedObject var pairingManager: PairingManager
-
-    var body: some View {
-        switch pairingManager.pairingState {
-        case .unpaired:
-            HStack(spacing: 12) {
-                ProgressView()
-                    .scaleEffect(0.8)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Searching for iPhone")
-                        .font(.subheadline.weight(.semibold))
-                    Text("Make sure ProximityUnlock is installed on your iPhone")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(12)
-            .background(Color(.controlBackgroundColor))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-
-        case .pairing(let phase):
-            switch phase {
-            case .waitingForPeer, .exchangingKeys:
-                HStack(spacing: 12) {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                    Text("Connecting…")
-                        .foregroundStyle(.secondary)
-                }
-                .padding(12)
-                .background(Color(.controlBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-
-            case .displayingCode(let code):
-                VStack(alignment: .leading, spacing: 12) {
-                    Label("Verify the code matches your iPhone", systemImage: "lock.shield")
-                        .font(.subheadline.weight(.semibold))
-
-                    Text(formatCode(code))
-                        .font(.system(size: 36, weight: .bold, design: .monospaced))
-                        .tracking(4)
-                        .padding(.vertical, 12)
-                        .frame(maxWidth: .infinity)
-                        .background(Color(.controlBackgroundColor))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-
-                    HStack(spacing: 12) {
-                        Button("Confirm") { pairingManager.confirmCode() }
-                            .buttonStyle(.borderedProminent)
-                        Button("Cancel", role: .destructive) { pairingManager.cancelPairing() }
-                    }
-                }
-
-            case .confirming, .deriving:
-                HStack(spacing: 12) {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                    Text("Completing pairing…")
-                        .foregroundStyle(.secondary)
-                }
-                .padding(12)
-                .background(Color(.controlBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
-
-        case .paired(let peerName):
-            HStack(spacing: 12) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(.green)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Paired with \(peerName)")
-                        .font(.subheadline.weight(.semibold))
-                    Text("Ready to proceed to the next step")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(12)
-            .background(Color.green.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-        }
-
-        if let error = pairingManager.pairingError {
-            Label(error, systemImage: "xmark.circle.fill")
-                .foregroundStyle(.red)
-                .font(.caption)
-                .padding(12)
-                .background(Color.red.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-        }
-    }
-
-    private func formatCode(_ code: String) -> String {
-        let clean = code.filter { $0.isNumber }
-        guard clean.count == 6 else { return code }
-        return String(clean.prefix(3)) + " " + String(clean.suffix(3))
-    }
-}
-
 // MARK: - Step 3: Password
 
 private struct Step3Password: View {
-    let pairingManager: PairingManager?
     @State private var password = ""
     @State private var confirmPassword = ""
     @State private var passwordMismatch = false
     @State private var showPasswordEntry = false
+    @State private var saved = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Login Password (Optional)")
                 .font(.headline)
+            Text("Save your Mac login password for automatic unlock:")
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
-            if pairingManager?.isPaired == true {
-                Text("Save your Mac login password for automatic unlock:")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if showPasswordEntry {
-                    VStack(spacing: 12) {
-                        SecureField("Mac password", text: $password)
-                            .textFieldStyle(.roundedBorder)
-                        SecureField("Confirm password", text: $confirmPassword)
-                            .textFieldStyle(.roundedBorder)
-
-                        if passwordMismatch {
-                            Label("Passwords do not match", systemImage: "xmark.circle")
-                                .foregroundStyle(.red)
-                                .font(.caption)
-                        }
-
-                        HStack(spacing: 12) {
-                            Button("Save") { savePassword() }
-                                .buttonStyle(.borderedProminent)
-                            Button("Cancel") {
-                                password = ""
-                                confirmPassword = ""
-                                passwordMismatch = false
-                                showPasswordEntry = false
-                            }
-                        }
-                    }
+            if saved {
+                Label("Password saved securely in Keychain", systemImage: "checkmark.seal.fill")
+                    .foregroundStyle(.green)
                     .padding(12)
-                    .background(Color(.controlBackgroundColor))
+                    .background(Color.green.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
-                } else {
-                    Button(action: { showPasswordEntry = true }) {
-                        HStack {
-                            Image(systemName: "lock.fill")
-                            Text("Save Password")
+            } else if showPasswordEntry {
+                VStack(spacing: 12) {
+                    SecureField("Mac password", text: $password)
+                        .textFieldStyle(.roundedBorder)
+                    SecureField("Confirm password", text: $confirmPassword)
+                        .textFieldStyle(.roundedBorder)
+
+                    if passwordMismatch {
+                        Label("Passwords do not match", systemImage: "xmark.circle")
+                            .foregroundStyle(.red)
+                            .font(.caption)
+                    }
+
+                    HStack(spacing: 12) {
+                        Button("Save") { savePassword() }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(password.isEmpty)
+                        Button("Cancel") {
+                            password = ""
+                            confirmPassword = ""
+                            passwordMismatch = false
+                            showPasswordEntry = false
                         }
                     }
-                    .buttonStyle(.bordered)
                 }
-
-                Text("Your password is stored securely in the system Keychain.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                .padding(12)
+                .background(Color(.controlBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             } else {
-                Label("Pair your iPhone first", systemImage: "lock.iphone")
-                    .foregroundStyle(.secondary)
-                    .font(.caption)
-                Text("You can add a password later in Settings after pairing is complete.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Button(action: { showPasswordEntry = true }) {
+                    HStack {
+                        Image(systemName: "lock.fill")
+                        Text("Save Password")
+                    }
+                }
+                .buttonStyle(.bordered)
             }
 
             Spacer()
+
+            Text("Your password is stored securely in the system Keychain and never transmitted.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -413,10 +361,11 @@ private struct Step3Password: View {
         confirmPassword = ""
         passwordMismatch = false
         showPasswordEntry = false
+        saved = true
     }
 }
 
-// MARK: - Step 4: Complete
+// MARK: - Step 4: Done
 
 private struct Step4Done: View {
     var body: some View {
@@ -430,21 +379,21 @@ private struct Step4Done: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("You're all set!")
                         .font(.headline)
-                    Text("ProximityUnlock is ready")
+                    Text("ProximityUnlock is ready — no iPhone app required.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
 
             VStack(alignment: .leading, spacing: 12) {
-                ChecklistItem(title: "Walk away", description: "Mac locks when iPhone moves away")
-                ChecklistItem(title: "Walk back", description: "iPhone prompts to unlock")
-                ChecklistItem(title: "Approve", description: "Mac unlocks after Face ID")
+                ChecklistItem(title: "Walk away", description: "Mac locks when your iPhone moves away")
+                ChecklistItem(title: "Walk back", description: "Mac unlocks automatically when you return")
+                ChecklistItem(title: "Always local", description: "Everything happens on your Mac via Bluetooth")
             }
 
             Spacer()
 
-            Text("Adjust sensitivity and settings from the menu bar icon anytime.")
+            Text("Adjust sensitivity and device selection from the menu bar icon anytime.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

@@ -13,9 +13,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var hasCompletedOnboarding: Bool
 
     override init() {
-        #if DEBUG
-        SecureKeyStore.shared.deleteAllData()
-        #endif
         self.proximityMonitor = ProximityMonitor()
         self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedMacOnboarding")
         super.init()
@@ -71,8 +68,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let symbolName: String
         if !proximityMonitor.isEnabled {
             symbolName = "iphone.slash"
-        } else if proximityMonitor.awaitingConfirmation {
-            symbolName = "iphone.and.arrow.forward"
         } else {
             switch proximityMonitor.proximityState {
             case .near:    symbolName = "lock.open.iphone"

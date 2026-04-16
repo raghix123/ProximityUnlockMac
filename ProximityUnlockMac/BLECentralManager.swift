@@ -3,21 +3,33 @@ import Foundation
 import AppKit
 import os
 
-/// BLE service UUID shared with the iOS app.
-/// M7+: Only the service UUID is needed for scanning/RSSI. No characteristics.
-enum BLEConstants {
-    static let serviceUUID = CBUUID(string: "5F0A4A6E-9DC4-4C57-9A8C-D8BF0B1B0FDE")
-}
-
-/// M7+: BLE is RSSI-only. The Mac scans for the iPhone's service UUID,
-/// connects to poll RSSI for proximity sensing, and fires device found/lost events.
-/// All commands (unlock_request, lock_event, confirmations) flow exclusively over MPC.
+/// Scans all nearby Bluetooth devices continuously.
+/// Reports RSSI only for the user-selected device.
+/// Uses advertisement RSSI directly — no BLE connection required.
 class BLECentralManager: NSObject, BLECentralManaging {
 
     private var central: CBCentralManagerProtocol!
-    private var peripheral: CBPeripheral?
-    private var rssiTimer: Timer?
-    private var lostTimer: Timer?
+    private var pruneTimer: Timer?
+
+    // MARK: - Device list
+
+    private var devicesByName: [String: DiscoveredDevice] = [:]
+    private var isSelectedDeviceActive = false
+
+    /// Called whenever the set of discovered devices changes (new device or stale removed).
+    var onDiscoveredDevicesChanged: (([DiscoveredDevice]) -> Void)?
+
+    // MARK: - Selection (in-memory; ProximityMonitor owns UserDefaults persistence)
+
+    private var _selectedDeviceName: String?
+
+    var selectedDeviceName: String? {
+        get { _selectedDeviceName }
+        set {
+            _selectedDeviceName = newValue
+            updateSelectedDeviceState()
+        }
+    }
 
     // MARK: - Callbacks
 
@@ -57,56 +69,64 @@ class BLECentralManager: NSObject, BLECentralManaging {
             self.central = CBCentralManager(delegate: self, queue: nil)
         }
 
-        // When the Mac wakes from sleep, cancel stale connection and restart scanning.
+        // Prune devices not seen for 15 seconds (check every 5s).
+        pruneTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            self?.pruneStaleDevices()
+        }
+
         NotificationCenter.default.addObserver(
             forName: NSWorkspace.didWakeNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.handleWakeFromSleep()
+            self?.startScanning()
         }
     }
 
-    // MARK: - Scanning / RSSI
+    // MARK: - Internal
 
     private func startScanning() {
         guard central.state == .poweredOn else { return }
-        // allowDuplicates: true gives sub-second RSSI updates from advertisement packets.
+        // nil = discover all devices. allowDuplicates gives continuous RSSI updates.
         central.scanForPeripherals(
-            withServices: [BLEConstants.serviceUUID],
+            withServices: nil,
             options: [CBCentralManagerScanOptionAllowDuplicatesKey: true]
         )
     }
 
-    private func startRSSIPolling() {
-        rssiTimer?.invalidate()
-        rssiTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            self?.peripheral?.readRSSI()
+    private func updateSelectedDeviceState() {
+        guard let name = _selectedDeviceName else {
+            if isSelectedDeviceActive {
+                isSelectedDeviceActive = false
+                onDeviceLost()
+            }
+            return
         }
-        peripheral?.readRSSI()
-    }
-
-    private func stopRSSIPolling() {
-        rssiTimer?.invalidate()
-        rssiTimer = nil
-        lostTimer?.invalidate()
-        lostTimer = nil
-    }
-
-    private func resetLostTimer() {
-        lostTimer?.invalidate()
-        lostTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: false) { [weak self] _ in
-            guard let self, let p = self.peripheral else { return }
-            self.central.cancelPeripheralConnection(p)
-        }
-    }
-
-    private func handleWakeFromSleep() {
-        Log.ble.info("Handling wake from sleep")
-        if let p = peripheral {
-            central.cancelPeripheralConnection(p)
+        if let device = devicesByName[name] {
+            if !isSelectedDeviceActive {
+                isSelectedDeviceActive = true
+                onDeviceFound()
+            }
+            onRSSIUpdate(device.rssi)
         } else {
-            startScanning()
+            if isSelectedDeviceActive {
+                isSelectedDeviceActive = false
+                onDeviceLost()
+            }
+        }
+    }
+
+    private func pruneStaleDevices() {
+        let cutoff = Date().addingTimeInterval(-15.0)
+        let staleNames = devicesByName.filter { $0.value.lastSeen < cutoff }.map { $0.key }
+        guard !staleNames.isEmpty else { return }
+        for name in staleNames { devicesByName.removeValue(forKey: name) }
+        let sorted = Array(devicesByName.values).sorted { $0.name < $1.name }
+        onDiscoveredDevicesChanged?(sorted)
+
+        if let selected = _selectedDeviceName, staleNames.contains(selected), isSelectedDeviceActive {
+            isSelectedDeviceActive = false
+            onDeviceLost()
         }
     }
 }
@@ -130,58 +150,32 @@ extension BLECentralManager: CBCentralManagerDelegate {
     ) {
         let rssiValue = RSSI.intValue
         guard rssiValue < 0 else { return }
+        guard let name = peripheral.name, !name.isEmpty else { return }
 
-        if self.peripheral == nil {
-            Log.ble.info("Discovered peripheral: \(peripheral.name ?? "unknown", privacy: .public) RSSI=\(rssiValue, privacy: .public)")
-            self.peripheral = peripheral
-            self.peripheral?.delegate = self
-            self.central.stopScan()
-            self.central.connect(peripheral, options: nil)
+        let isNew = devicesByName[name] == nil
+        var device = devicesByName[name] ?? DiscoveredDevice(
+            id: peripheral.identifier,
+            name: name,
+            rssi: rssiValue,
+            lastSeen: Date()
+        )
+        device.rssi = rssiValue
+        device.lastSeen = Date()
+        devicesByName[name] = device
+
+        if isNew {
+            let sorted = Array(devicesByName.values).sorted { $0.name < $1.name }
+            onDiscoveredDevicesChanged?(sorted)
+            Log.ble.info("Discovered new device: \(name, privacy: .public) RSSI=\(rssiValue, privacy: .public)")
+        }
+
+        guard name == _selectedDeviceName else { return }
+
+        if !isSelectedDeviceActive {
+            Log.ble.info("Selected device found: \(name, privacy: .public) RSSI=\(rssiValue, privacy: .public)")
+            isSelectedDeviceActive = true
             onDeviceFound()
         }
-        // Feed advertisement RSSI immediately for fast proximity updates.
         onRSSIUpdate(rssiValue)
-    }
-
-    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        Log.ble.info("Connected to peripheral: \(peripheral.name ?? "unknown", privacy: .public)")
-        startRSSIPolling()
-    }
-
-    func centralManager(
-        _ central: CBCentralManager,
-        didDisconnectPeripheral peripheral: CBPeripheral,
-        error: Error?
-    ) {
-        Log.ble.info("Disconnected from peripheral: \(peripheral.name ?? "unknown", privacy: .public), error: \(error?.localizedDescription ?? "none", privacy: .public)")
-        stopRSSIPolling()
-        self.peripheral = nil
-        onDeviceLost()
-        startScanning()
-    }
-
-    func centralManager(
-        _ central: CBCentralManager,
-        didFailToConnect peripheral: CBPeripheral,
-        error: Error?
-    ) {
-        Log.ble.error("Failed to connect: \(peripheral.name ?? "unknown", privacy: .public), error: \(error?.localizedDescription ?? "none", privacy: .public)")
-        self.peripheral = nil
-        startScanning()
-    }
-}
-
-// MARK: - CBPeripheralDelegate
-
-extension BLECentralManager: CBPeripheralDelegate {
-
-    func peripheral(_ peripheral: CBPeripheral, didReadRSSI RSSI: NSNumber, error: Error?) {
-        if let error {
-            Log.ble.error("Failed to read RSSI: \(error.localizedDescription, privacy: .public)")
-        }
-        guard error == nil else { return }
-        Log.ble.debug("RSSI: \(RSSI.intValue, privacy: .public)")
-        resetLostTimer()
-        onRSSIUpdate(RSSI.intValue)
     }
 }

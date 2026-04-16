@@ -77,12 +77,13 @@ final class BLECentralManagerTests: XCTestCase {
 
     func testMockCentralRecordsScanCalls() {
         mockCentral.reset()
+        // Scan with nil — discovers all devices (no service UUID filter).
         mockCentral.scanForPeripherals(
-            withServices: [BLEConstants.serviceUUID],
+            withServices: nil,
             options: [CBCentralManagerScanOptionAllowDuplicatesKey: true]
         )
         XCTAssertTrue(mockCentral.scanForPeripheralsCalled)
-        XCTAssertEqual(mockCentral.scanServiceUUIDs, [BLEConstants.serviceUUID])
+        XCTAssertNil(mockCentral.scanServiceUUIDs)
     }
 
     func testMockCentralRecordsStopScan() {
