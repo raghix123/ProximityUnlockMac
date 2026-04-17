@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>ProximityUnlock uses Bluetooth to detect your iPhone.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>ProximityUnlock uses the local network to maintain a reliable connection with your iPhone for proximity unlocking.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string></string>
+	<key>SUFeedURL</key>
+	<string>https://raghix123.github.io/ProximityUnlockMac/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>eNPcOg3/wLJ3503ecivsKkIXs7rAaWKAy7OBkpG1jt0=</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+</dict>
+</plist>

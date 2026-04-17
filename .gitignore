@@ -27,3 +27,10 @@ Carthage/Build/
 
 # Claude Code
 .claude/
+
+# Sparkle release artifacts (zips and private keys must never be committed)
+updates/
+*.private-key
+
+# Build export output (archives are in build/ already covered above)
+build/export/

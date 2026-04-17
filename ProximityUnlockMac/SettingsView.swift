@@ -3,6 +3,7 @@ import AppKit
 
 struct SettingsView: View {
     @EnvironmentObject var monitor: ProximityMonitor
+    @EnvironmentObject var updater: UpdaterController
 
     @State private var password: String = ""
     @State private var confirmPassword: String = ""
@@ -162,6 +163,32 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            // MARK: Updates
+            Section("Updates") {
+                Toggle("Automatically check for updates", isOn: $updater.automaticUpdateChecks)
+
+                Picker("Update channel", selection: $updater.updateChannel) {
+                    ForEach(UpdaterController.UpdateChannel.allCases) { ch in
+                        Text(ch.displayName).tag(ch)
+                    }
+                }
+
+                HStack {
+                    Button("Check for Updates Now") { updater.checkForUpdates() }
+                        .disabled(!updater.canCheckForUpdates)
+                    Spacer()
+                    if let d = updater.lastUpdateCheckDate {
+                        Text("Last checked: \(d.formatted(date: .abbreviated, time: .shortened))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Link("View all releases on GitHub",
+                     destination: URL(string: "https://github.com/raghix123/ProximityUnlockMac/releases")!)
+                    .font(.caption)
+            }
+
             Section {
                 Button("Reset All Data & Quit", role: .destructive) {
                     showResetConfirm = true
@@ -195,7 +222,7 @@ struct SettingsView: View {
             Text("This will delete all settings and your saved password. The app will quit.")
         }
         .formStyle(.grouped)
-        .frame(width: 440, height: 780)
+        .frame(width: 440, height: 940)
         .onAppear { refresh() }
     }
 

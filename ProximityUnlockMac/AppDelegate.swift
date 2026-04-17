@@ -11,6 +11,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
     private var onboardingWindow: NSWindow?
     private var hasCompletedOnboarding: Bool
+    let updaterController = UpdaterController()
 
     override init() {
         self.proximityMonitor = ProximityMonitor()
@@ -99,9 +100,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func openSettings() {
         Log.ui.info("Opening settings")
         if settingsWindow == nil {
-            let view = SettingsView().environmentObject(proximityMonitor)
+            let view = SettingsView()
+                .environmentObject(proximityMonitor)
+                .environmentObject(updaterController)
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 440, height: 560),
+                contentRect: NSRect(x: 0, y: 0, width: 440, height: 940),
                 styleMask: [.titled, .closable, .miniaturizable],
                 backing: .buffered,
                 defer: false
@@ -116,6 +119,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         settingsWindow?.orderFrontRegardless()
         NSApp.activate(ignoringOtherApps: true)
     }
+
+    @objc private func checkForUpdates() { updaterController.checkForUpdates() }
 
     @objc func showOnboardingFromMenu() {
         Log.ui.info("Showing onboarding from menu")
@@ -182,6 +187,7 @@ extension AppDelegate: NSMenuDelegate {
         menu.addItem(NSMenuItem(title: toggleTitle, action: #selector(toggleEnabled), keyEquivalent: ""))
         menu.addItem(NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ","))
         menu.addItem(NSMenuItem(title: "Setup Guide...", action: #selector(showOnboardingFromMenu), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Check for Updates...", action: #selector(checkForUpdates), keyEquivalent: ""))
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(
             title: "Quit ProximityUnlock",

@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		AA00BB11CC22DD33EE44FF55 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = AA00BB11CC22DD33EE44FF66 /* Sparkle */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		8A5F72A0FA0048E183C84CE8 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -43,8 +47,18 @@
 		};
 		A00341622F3C036300FCE096 /* ProximityUnlockMac */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				AA00BB11CC22DD33EE44FF88 /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */,
+			);
 			path = ProximityUnlockMac;
 			sourceTree = "<group>";
+		};
+		AA00BB11CC22DD33EE44FF88 /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = A003415E2F3C036300FCE096 /* Resources */;
+			membershipExceptions = (
+				Info.plist,
+			);
 		};
 		A3B013A144774FC2BBF418B3 /* ProximityUnlockiOS */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -70,6 +84,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA00BB11CC22DD33EE44FF55 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -180,6 +195,7 @@
 			);
 			name = ProximityUnlockMac;
 			packageProductDependencies = (
+				AA00BB11CC22DD33EE44FF66 /* Sparkle */,
 			);
 			productName = ProximityUnlockMac;
 			productReference = A00341602F3C036300FCE096 /* ProximityUnlockMac.app */;
@@ -232,6 +248,9 @@
 			);
 			mainGroup = A00341572F3C036300FCE096;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				AA00BB11CC22DD33EE44FF77 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A00341612F3C036300FCE096 /* Products */;
 			projectDirPath = "";
@@ -503,10 +522,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "ProximityUnlock uses Bluetooth to detect your iPhone.";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "ProximityUnlock uses the local network to maintain a reliable connection with your iPhone for proximity unlocking.";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ProximityUnlockMac/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -535,10 +552,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "ProximityUnlock uses Bluetooth to detect your iPhone.";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "ProximityUnlock uses the local network to maintain a reliable connection with your iPhone for proximity unlocking.";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ProximityUnlockMac/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -680,6 +695,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AA00BB11CC22DD33EE44FF77 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.6.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AA00BB11CC22DD33EE44FF66 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA00BB11CC22DD33EE44FF77 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A00341582F3C036300FCE096 /* Project object */;
 }
