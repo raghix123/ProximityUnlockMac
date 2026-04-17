@@ -26,11 +26,15 @@ Your iPhone broadcasts a BLE advertisement that's unique and stable once paired 
 ## Requirements
 
 - macOS 26.2 or later
-- A Mac with Bluetooth Low Energy
+- Apple Silicon Mac (M1 or later) with Bluetooth Low Energy — Intel Macs aren't supported
 - An iPhone paired with this Mac at least once (classic Bluetooth pairing — so the iPhone is a known device)
 - Accessibility permission (for typing the password at the login window)
 
 ## Install
+
+> **v1.0 is coming soon.** The first public release is pending Apple Developer enrollment. [Watch this repo](https://github.com/raghix123/ProximityUnlockMac/subscription) to be notified, or build from source (see below) in the meantime.
+
+When a release is published:
 
 1. Download the latest `ProximityUnlock-<version>.dmg` from the [Releases page](https://github.com/raghix123/ProximityUnlockMac/releases).
 2. Open the DMG and drag **ProximityUnlock** into the Applications folder.
