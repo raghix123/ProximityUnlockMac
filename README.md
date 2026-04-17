@@ -11,8 +11,6 @@
 
 A macOS menu-bar app that uses Bluetooth Low Energy to sense your paired iPhone and lock or unlock your Mac automatically — no typing, no tapping, no cloud.
 
-![Menu bar](docs/assets/screenshot-menubar.png)
-
 ## Features
 
 - **Hands-free lock and unlock** — cross your "far" threshold, Mac locks; cross "near," it wakes and types your password.
@@ -24,8 +22,6 @@ A macOS menu-bar app that uses Bluetooth Low Energy to sense your paired iPhone 
 ## How it works
 
 Your iPhone broadcasts a BLE advertisement that's unique and stable once paired over classic Bluetooth. ProximityUnlock listens for that advertisement, reads its RSSI (signal strength), and smooths the stream to decide near vs. far. Crossing the far threshold runs Apple's private lock API; crossing the near threshold wakes the display and types your saved login password via the Accessibility API.
-
-![Sensitivity settings](docs/assets/screenshot-settings.png)
 
 ## Requirements
 
@@ -42,19 +38,16 @@ Your iPhone broadcasts a BLE advertisement that's unique and stable once paired 
 
 Prefer a `.zip`? It's on the same release page and contains the same app.
 
-### First-launch Gatekeeper warning (pre-notarization builds)
+### First-launch warning (pre-notarization builds)
 
-Until the app is notarized by Apple, macOS Gatekeeper may block the first launch with a "cannot be opened" or "can't be verified" dialog. Fix it one of two ways:
+Until the app is notarized by Apple, macOS Gatekeeper may block the first launch with a "cannot be opened" or "can't be verified" dialog. Here's how to get past it — no terminal required:
 
-- **Right-click the app → Open → Open anyway** in the confirmation dialog, or
-- Open Terminal and run:
-  ```bash
-  xattr -dr com.apple.quarantine /Applications/ProximityUnlock.app
-  ```
+1. Click **Done** or **OK** on the warning dialog.
+2. Open **System Settings → Privacy & Security**.
+3. Scroll down. You'll see "ProximityUnlock was blocked…" with an **Open Anyway** button next to it. Click it.
+4. Confirm with Touch ID or your password.
 
 You only need to do this once. Sparkle updates won't re-trigger the warning.
-
-![Device picker](docs/assets/screenshot-picker.png)
 
 ## Build from source
 
@@ -85,6 +78,7 @@ Or open `ProximityUnlockMac.xcodeproj` in Xcode to run and debug.
 
 ## Credits
 
+- Icon by [Freepik on Flaticon](https://www.flaticon.com)
 - [Sparkle](https://sparkle-project.org) for updates
 - [TelemetryDeck](https://telemetrydeck.com) for opt-in anonymous analytics
 

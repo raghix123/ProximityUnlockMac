@@ -273,9 +273,15 @@ struct SettingsView: View {
                     Link("github.com/raghix123/ProximityUnlockMac",
                          destination: URL(string: "https://github.com/raghix123/ProximityUnlockMac")!)
                 }
-                Text("This app is open source. The code can be modified and used however you please — just give me credit.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("This app is open source. The code can be modified and used however you please — just give me credit.")
+                    HStack(spacing: 4) {
+                        Text("Icon by")
+                        Link("Freepik on Flaticon", destination: URL(string: "https://www.flaticon.com")!)
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
