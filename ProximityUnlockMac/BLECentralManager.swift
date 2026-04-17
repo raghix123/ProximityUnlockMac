@@ -81,7 +81,9 @@ class BLECentralManager: NSObject, BLECentralManaging {
             self?.pruneStaleDevices()
         }
 
-        wakeObserver = NotificationCenter.default.addObserver(
+        // NSWorkspace notifications only post to NSWorkspace.shared.notificationCenter,
+        // not the default center.
+        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification,
             object: nil,
             queue: .main
@@ -92,7 +94,9 @@ class BLECentralManager: NSObject, BLECentralManaging {
 
     deinit {
         pruneTimer?.invalidate()
-        if let obs = wakeObserver { NotificationCenter.default.removeObserver(obs) }
+        if let obs = wakeObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(obs)
+        }
     }
 
     // MARK: - Internal
@@ -152,6 +156,18 @@ extension BLECentralManager: CBCentralManagerDelegate {
         onStateChange?(central.state)
         if central.state == .poweredOn {
             startScanning()
+        } else {
+            // Radio off / unauthorized / resetting — discovered devices are no longer valid.
+            // Clear the list and tell ProximityMonitor the selected device is gone, otherwise
+            // the status bar UI would falsely report "nearby" until the 15-second prune.
+            if !devicesByName.isEmpty {
+                devicesByName.removeAll()
+                onDiscoveredDevicesChanged?([])
+            }
+            if isSelectedDeviceActive {
+                isSelectedDeviceActive = false
+                onDeviceLost()
+            }
         }
     }
 

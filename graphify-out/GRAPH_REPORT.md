@@ -1,184 +1,146 @@
-# Graph Report - .  (2026-04-11)
+# Graph Report - .  (2026-04-17)
 
 ## Corpus Check
-- 42 files · ~18,490 words
+- 21 files · ~49,555 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 413 nodes · 514 edges · 30 communities detected
+- 226 nodes · 314 edges · 20 communities detected
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## God Nodes (most connected - your core abstractions)
-1. `ProximityMonitorTests` - 22 edges
-2. `MultipeerManager` - 21 edges
-3. `UnlockConfirmationManagerTests` - 19 edges
-4. `SecureKeyStore` - 19 edges
-5. `PairingManager` - 17 edges
-6. `ProximityMonitor` - 15 edges
-7. `SecurityError` - 14 edges
-8. `BLECentralManager` - 14 edges
-9. `BLECentralManagerTests` - 13 edges
-10. `AppDelegate` - 13 edges
+1. `ProximityMonitorTests` - 36 edges
+2. `AppDelegate` - 18 edges
+3. `BLECentralManagerTests` - 14 edges
+4. `TelemetryService` - 13 edges
+5. `UpdaterControllerTests` - 12 edges
+6. `UnlockManager` - 12 edges
+7. `ProximityMonitor` - 11 edges
+8. `BLECentralManager` - 11 edges
+9. `UpdaterController` - 8 edges
+10. `ScrollDetectorNSView` - 8 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `ProximityMonitorTests` --inherits--> `XCTestCase`  [EXTRACTED]
-  ProximityUnlockMacTests/ProximityMonitorTests.swift →   _Bridges community 3 → community 2_
-- `UnlockConfirmationManagerTests` --inherits--> `XCTestCase`  [EXTRACTED]
-  ProximityUnlockiOSTests/UnlockConfirmationManagerTests.swift →   _Bridges community 2 → community 6_
-- `SecureMessage` --inherits--> `Codable`  [EXTRACTED]
-  Shared/CryptoTypes.swift →   _Bridges community 0 → community 13_
-- `MultipeerManager` --inherits--> `ObservableObject`  [EXTRACTED]
-  ProximityUnlockMac/MultipeerManager.swift →   _Bridges community 9 → community 1_
-- `PairingManager` --inherits--> `ObservableObject`  [EXTRACTED]
-  ProximityUnlockMac/PairingManager.swift →   _Bridges community 9 → community 11_
+  ProximityUnlockMacTests/ProximityMonitorTests.swift →   _Bridges community 0 → community 4_
+- `UpdateChannel` --inherits--> `Identifiable`  [EXTRACTED]
+  ProximityUnlockMac/UpdaterController.swift →   _Bridges community 11 → community 9_
+- `UpdaterController` --inherits--> `NSObject`  [EXTRACTED]
+  ProximityUnlockMac/UpdaterController.swift →   _Bridges community 9 → community 6_
+- `AppDelegate` --inherits--> `NSObject`  [EXTRACTED]
+  ProximityUnlockMac/AppDelegate.swift →   _Bridges community 6 → community 2_
+- `ProximityMonitor` --inherits--> `ObservableObject`  [EXTRACTED]
+  ProximityUnlockMac/ProximityMonitor.swift →   _Bridges community 9 → community 3_
 
 ## Communities
 
 ### Community 0 - "Community 0"
-Cohesion: 0.07
-Nodes (27): IdentityKeyProviding, KeychainKey, PairingPhase, confirming, deriving, displayingCode, exchangingKeys, waitingForPeer (+19 more)
-
-### Community 1 - "Community 1"
-Cohesion: 0.09
-Nodes (6): MacMultipeerManaging, MCNearbyServiceAdvertiserDelegate, MCNearbyServiceBrowserDelegate, MCSessionDelegate, MockMultipeerManager, MultipeerManager
-
-### Community 2 - "Community 2"
-Cohesion: 0.08
-Nodes (3): BLECentralManagerTests, BLEPeripheralManagerTests, XCTestCase
-
-### Community 3 - "Community 3"
-Cohesion: 0.09
+Cohesion: 0.12
 Nodes (1): ProximityMonitorTests
 
+### Community 1 - "Community 1"
+Cohesion: 0.14
+Nodes (14): DeviceRow, FeaturePill, HeroIcon, MacOnboardingView, Step0Welcome, Step1SecurityWarning, Step2DeviceSelect, Step3Accessibility (+6 more)
+
+### Community 2 - "Community 2"
+Cohesion: 0.17
+Nodes (3): AppDelegate, NSApplicationDelegate, NSMenuDelegate
+
+### Community 3 - "Community 3"
+Cohesion: 0.17
+Nodes (6): CustomStringConvertible, ProximityMonitor, ProximityState, far, near, unknown
+
 ### Community 4 - "Community 4"
-Cohesion: 0.11
-Nodes (9): App, AppDelegate, NSApplicationDelegate, NSMenuDelegate, NSObject, AppDelegate, ProximityUnlockiOSApp, UIApplicationDelegate (+1 more)
+Cohesion: 0.13
+Nodes (2): BLECentralManagerTests, XCTestCase
 
 ### Community 5 - "Community 5"
-Cohesion: 0.13
-Nodes (1): SecureKeyStore
+Cohesion: 0.26
+Nodes (1): TelemetryService
 
 ### Community 6 - "Community 6"
-Cohesion: 0.11
-Nodes (1): UnlockConfirmationManagerTests
+Cohesion: 0.18
+Nodes (5): BLECentralManager, BLECentralManaging, CBCentralManagerDelegate, MockBLECentralManager, NSObject
 
 ### Community 7 - "Community 7"
-Cohesion: 0.2
-Nodes (5): ProximityMonitor, ProximityState, far, near, unknown
+Cohesion: 0.21
+Nodes (1): UpdaterControllerTests
 
 ### Community 8 - "Community 8"
-Cohesion: 0.16
-Nodes (12): AnyObject, CBPeripheralManager, CBPeripheralManagerProtocol, NotificationCentering, UNUserNotificationCenter, BLECentralManaging, CBCentralManager, CBCentralManagerProtocol (+4 more)
-
-### Community 9 - "Community 9"
-Cohesion: 0.12
-Nodes (4): BLEPeripheralManager, CBPeripheralManagerDelegate, ObservableObject, ProximityAdvertiser
-
-### Community 10 - "Community 10"
-Cohesion: 0.17
-Nodes (6): BLECentralManager, BLEConstants, BLECentralManaging, CBCentralManagerDelegate, CBPeripheralDelegate, MockBLECentralManager
-
-### Community 11 - "Community 11"
-Cohesion: 0.26
-Nodes (1): PairingManager
-
-### Community 12 - "Community 12"
-Cohesion: 0.15
-Nodes (8): ContentView, PairingCodeConfirmView, PairingInProgressView, PairingPhaseView, PairingSectionView, SettingsView, StatusView, View
-
-### Community 13 - "Community 13"
-Cohesion: 0.23
-Nodes (12): Codable, PairingCancelled, PairingConfirmation, PairingMessageType, cancelled, confirmation, request, response (+4 more)
-
-### Community 14 - "Community 14"
 Cohesion: 0.23
 Nodes (1): UnlockManager
 
-### Community 15 - "Community 15"
-Cohesion: 0.18
-Nodes (12): CodingKey, CodingKeys, command, counter, payload, senderPublicKey, signature, timestamp (+4 more)
+### Community 9 - "Community 9"
+Cohesion: 0.19
+Nodes (8): CaseIterable, ObservableObject, SPUUpdaterDelegate, String, UpdateChannel, beta, stable, UpdaterController
 
-### Community 16 - "Community 16"
-Cohesion: 0.24
-Nodes (2): IdentityKeyManager, IdentityKeyProviding
-
-### Community 17 - "Community 17"
-Cohesion: 0.27
-Nodes (1): UnlockConfirmationManager
-
-### Community 18 - "Community 18"
-Cohesion: 0.35
-Nodes (1): KeychainHelper
-
-### Community 19 - "Community 19"
-Cohesion: 0.18
-Nodes (2): CBPeripheralManagerProtocol, MockCBPeripheralManager
-
-### Community 20 - "Community 20"
-Cohesion: 0.22
-Nodes (2): MockNotificationCenter, NotificationCentering
-
-### Community 21 - "Community 21"
-Cohesion: 0.28
-Nodes (1): MessageSigner
-
-### Community 22 - "Community 22"
+### Community 10 - "Community 10"
 Cohesion: 0.25
+Nodes (4): ScrollBottomDetector, ScrollDetectorNSView, NSView, NSViewRepresentable
+
+### Community 11 - "Community 11"
+Cohesion: 0.27
+Nodes (9): AnyObject, BLECentralManaging, CBCentralManager, CBCentralManagerProtocol, DiscoveredDevice, UnlockManager, UnlockManaging, Equatable (+1 more)
+
+### Community 12 - "Community 12"
+Cohesion: 0.29
 Nodes (2): MockUnlockManager, UnlockManaging
 
-### Community 23 - "Community 23"
-Cohesion: 0.25
+### Community 13 - "Community 13"
+Cohesion: 0.33
+Nodes (1): KeychainHelper
+
+### Community 14 - "Community 14"
+Cohesion: 0.33
 Nodes (2): CBCentralManagerProtocol, MockCBCentralManager
 
-### Community 24 - "Community 24"
-Cohesion: 0.39
-Nodes (1): GlobalKeyMonitor
-
-### Community 25 - "Community 25"
-Cohesion: 0.5
-Nodes (2): BiometricChecking, MockBiometricChecker
-
-### Community 26 - "Community 26"
+### Community 15 - "Community 15"
 Cohesion: 0.67
-Nodes (2): BiometricChecking, BiometricRecencyChecker
+Nodes (1): RSSIDistance
 
-### Community 27 - "Community 27"
+### Community 16 - "Community 16"
 Cohesion: 1.0
 Nodes (1): Log
 
-### Community 28 - "Community 28"
+### Community 17 - "Community 17"
 Cohesion: 1.0
-Nodes (1): BLEConstants
+Nodes (1): LoginItemManager
 
-### Community 29 - "Community 29"
+### Community 18 - "Community 18"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 19 - "Community 19"
 Cohesion: 1.0
 Nodes (0): 
 
 ## Knowledge Gaps
-- **40 isolated node(s):** `keyGenerationFailed`, `invalidPublicKey`, `sharedSecretFailed`, `signatureFailed`, `verificationFailed` (+35 more)
+- **7 isolated node(s):** `Log`, `stable`, `beta`, `near`, `far` (+2 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `Community 27`** (2 nodes): `Logger.swift`, `Log`
+- **Thin community `Community 16`** (2 nodes): `Logger.swift`, `Log`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 28`** (2 nodes): `BLEConstants.swift`, `BLEConstants`
+- **Thin community `Community 17`** (2 nodes): `LoginItemManager.swift`, `LoginItemManager`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 29`** (1 nodes): `main.swift`
+- **Thin community `Community 18`** (2 nodes): `generate_icon.swift`, `roundedRect()`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 19`** (1 nodes): `main.swift`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `MultipeerManager` connect `Community 1` to `Community 9`, `Community 4`?**
-  _High betweenness centrality (0.048) - this node is a cross-community bridge._
-- **Why does `ProximityMonitor` connect `Community 7` to `Community 9`?**
-  _High betweenness centrality (0.025) - this node is a cross-community bridge._
-- **Why does `BLEPeripheralManager` connect `Community 9` to `Community 4`?**
-  _High betweenness centrality (0.025) - this node is a cross-community bridge._
-- **What connects `keyGenerationFailed`, `invalidPublicKey`, `sharedSecretFailed` to the rest of the system?**
-  _40 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `UpdaterController` connect `Community 9` to `Community 6`?**
+  _High betweenness centrality (0.065) - this node is a cross-community bridge._
+- **Why does `AppDelegate` connect `Community 2` to `Community 6`?**
+  _High betweenness centrality (0.041) - this node is a cross-community bridge._
+- **Why does `ProximityMonitorTests` connect `Community 0` to `Community 4`?**
+  _High betweenness centrality (0.036) - this node is a cross-community bridge._
+- **What connects `Log`, `stable`, `beta` to the rest of the system?**
+  _7 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.07 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.12 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.09 - nodes in this community are weakly interconnected._
-- **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.08 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.14 - nodes in this community are weakly interconnected._
+- **Should `Community 4` be split into smaller, more focused modules?**
+  _Cohesion score 0.13 - nodes in this community are weakly interconnected._

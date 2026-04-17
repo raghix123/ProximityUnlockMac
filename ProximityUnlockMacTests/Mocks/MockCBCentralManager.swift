@@ -19,12 +19,6 @@ class MockCBCentralManager: CBCentralManagerProtocol {
 
     private(set) var stopScanCalled = false
 
-    private(set) var connectCalled = false
-    private(set) var connectedPeripheral: CBPeripheral?
-
-    private(set) var cancelPeripheralConnectionCalled = false
-    private(set) var cancelledPeripheral: CBPeripheral?
-
     // MARK: - CBCentralManagerProtocol
 
     func scanForPeripherals(withServices serviceUUIDs: [CBUUID]?, options: [String: Any]?) {
@@ -37,16 +31,6 @@ class MockCBCentralManager: CBCentralManagerProtocol {
         stopScanCalled = true
     }
 
-    func connect(_ peripheral: CBPeripheral, options: [String: Any]?) {
-        connectCalled = true
-        connectedPeripheral = peripheral
-    }
-
-    func cancelPeripheralConnection(_ peripheral: CBPeripheral) {
-        cancelPeripheralConnectionCalled = true
-        cancelledPeripheral = peripheral
-    }
-
     // MARK: - Helpers
 
     func reset() {
@@ -54,9 +38,5 @@ class MockCBCentralManager: CBCentralManagerProtocol {
         scanServiceUUIDs = nil
         scanOptions = nil
         stopScanCalled = false
-        connectCalled = false
-        connectedPeripheral = nil
-        cancelPeripheralConnectionCalled = false
-        cancelledPeripheral = nil
     }
 }

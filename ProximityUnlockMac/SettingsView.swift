@@ -273,12 +273,9 @@ struct SettingsView: View {
                     Link("github.com/raghix123/ProximityUnlockMac",
                          destination: URL(string: "https://github.com/raghix123/ProximityUnlockMac")!)
                 }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("This app is open source. The code can be modified and used however you please — just give me credit.")
-                    Text("Icon made by Freepik from www.flaticon.com")
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                Text("This app is open source. The code can be modified and used however you please — just give me credit.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
@@ -337,6 +334,9 @@ struct SettingsView: View {
 
     private func resetAndQuit() {
         KeychainHelper.shared.deletePassword()
+        // Unregister from launch-at-login so the reset leaves nothing behind in the
+        // system's Login Items list. UserDefaults wipe alone doesn't revert SMAppService.
+        if LoginItemManager.isEnabled { LoginItemManager.isEnabled = false }
         if let id = Bundle.main.bundleIdentifier {
             UserDefaults.standard.removePersistentDomain(forName: id)
         }

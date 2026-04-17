@@ -20,10 +20,8 @@
 	<true/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>ProximityUnlock uses Bluetooth to detect your iPhone.</string>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>ProximityUnlock uses the local network to maintain a reliable connection with your iPhone for proximity unlocking.</string>
 	<key>NSHumanReadableCopyright</key>
-	<string></string>
+	<string>Copyright © 2026 Raghav Bodicherla. Open source — see README for details.</string>
 	<key>SUFeedURL</key>
 	<string>https://raghix123.github.io/ProximityUnlockMac/appcast.xml</string>
 	<key>SUPublicEDKey</key>

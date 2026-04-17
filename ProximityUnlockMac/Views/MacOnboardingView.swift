@@ -179,6 +179,7 @@ private struct Step1SecurityWarning: View {
                 .tint(.red)
                 .alert("Remove ProximityUnlock?", isPresented: $showDeleteConfirm) {
                     Button("Delete Data & Quit", role: .destructive) {
+                        if LoginItemManager.isEnabled { LoginItemManager.isEnabled = false }
                         if let id = Bundle.main.bundleIdentifier {
                             UserDefaults.standard.removePersistentDomain(forName: id)
                         }

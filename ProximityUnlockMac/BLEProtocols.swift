@@ -16,8 +16,6 @@ protocol CBCentralManagerProtocol: AnyObject {
     var state: CBManagerState { get }
     func scanForPeripherals(withServices serviceUUIDs: [CBUUID]?, options: [String: Any]?)
     func stopScan()
-    func connect(_ peripheral: CBPeripheral, options: [String: Any]?)
-    func cancelPeripheralConnection(_ peripheral: CBPeripheral)
 }
 
 extension CBCentralManager: CBCentralManagerProtocol {}

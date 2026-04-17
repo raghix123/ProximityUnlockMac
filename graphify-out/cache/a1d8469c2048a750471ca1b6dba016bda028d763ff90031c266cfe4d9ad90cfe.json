@@ -1,0 +1,1 @@
+{"nodes": [{"id": "main", "label": "main.swift", "file_type": "code", "source_file": "ProximityUnlockMac/main.swift", "source_location": "L1"}], "edges": [{"source": "main", "target": "appkit", "relation": "imports", "confidence": "EXTRACTED", "source_file": "ProximityUnlockMac/main.swift", "source_location": "L1", "weight": 1.0}]}

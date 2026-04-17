@@ -16,14 +16,22 @@ class UnlockManager {
 
     // MARK: - Lock State (notification-tracked)
 
-    private var _isScreenLocked: Bool = false
+    // Accessed from the main queue (notification observers, ProximityMonitor) AND
+    // from a background polling thread in waitForLoginWindow, so writes/reads go
+    // through a lock to keep TSan happy and prevent torn reads.
+    private let lockedState = OSAllocatedUnfairLock<Bool>(initialState: false)
     private var lockObserver: NSObjectProtocol?
     private var unlockObserver: NSObjectProtocol?
+
+    private var isLockedFlag: Bool {
+        get { lockedState.withLock { $0 } }
+        set { lockedState.withLock { $0 = newValue } }
+    }
 
     init() {
         // Seed initial state from CGSession (works on older macOS; falls back to false on macOS 26+)
         if let dict = CGSessionCopyCurrentDictionary() as? [String: Any] {
-            _isScreenLocked = dict["CGSSessionScreenIsLocked"] as? Bool ?? false
+            isLockedFlag = dict["CGSSessionScreenIsLocked"] as? Bool ?? false
         }
 
         let nc = DistributedNotificationCenter.default()
@@ -33,7 +41,7 @@ class UnlockManager {
             queue: .main
         ) { [weak self] _ in
             Log.unlock.info("Screen lock notification received")
-            self?._isScreenLocked = true
+            self?.isLockedFlag = true
         }
         unlockObserver = nc.addObserver(
             forName: NSNotification.Name("com.apple.screenIsUnlocked"),
@@ -41,7 +49,7 @@ class UnlockManager {
             queue: .main
         ) { [weak self] _ in
             Log.unlock.info("Screen unlock notification received")
-            self?._isScreenLocked = false
+            self?.isLockedFlag = false
         }
     }
 
@@ -53,8 +61,9 @@ class UnlockManager {
     // MARK: - Public API
 
     func isScreenLocked() -> Bool {
-        Log.unlock.debug("isScreenLocked: \(self._isScreenLocked, privacy: .public)")
-        return _isScreenLocked
+        let locked = isLockedFlag
+        Log.unlock.debug("isScreenLocked: \(locked, privacy: .public)")
+        return locked
     }
 
     func unlockScreen() {
@@ -77,7 +86,7 @@ class UnlockManager {
             self.typeStringAndSubmit(password)
             // Optimistically mark as unlocked — the distributed notification will
             // confirm once the system actually unlocks.
-            self._isScreenLocked = false
+            self.isLockedFlag = false
         }
     }
 
@@ -93,7 +102,7 @@ class UnlockManager {
             lockFn()
             // Set immediately — the distributed notification may not fire for programmatic
             // locks on macOS 26, so we can't rely on it alone for state tracking.
-            _isScreenLocked = true
+            isLockedFlag = true
         } else {
             let err = dlerror().map { String(cString: $0) } ?? "unknown error"
             Log.unlock.warning("SACLockScreenImmediate unavailable (\(err, privacy: .public)), falling back to pmset")
@@ -101,7 +110,7 @@ class UnlockManager {
             task.launchPath = "/usr/bin/pmset"
             task.arguments = ["displaysleepnow"]
             try? task.run()
-            _isScreenLocked = true
+            isLockedFlag = true
         }
     }
 
@@ -117,13 +126,13 @@ class UnlockManager {
         )
     }
 
-    /// Polls `_isScreenLocked` (notification-tracked) until the lock screen is up,
+    /// Polls the notification-tracked locked flag until the lock screen is up,
     /// then fires the completion on a background thread.
     private func waitForLoginWindow(timeout: TimeInterval, completion: @escaping () -> Void) {
         DispatchQueue.global(qos: .userInitiated).async {
             let deadline = Date().addingTimeInterval(timeout)
             while Date() < deadline {
-                if self._isScreenLocked {
+                if self.isLockedFlag {
                     Log.unlock.info("Login window detected")
                     // Extra settle time for the login window UI.
                     usleep(500_000) // 500ms

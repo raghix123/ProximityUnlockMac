@@ -48,7 +48,6 @@ Open `ProximityUnlockMac.xcodeproj` in Xcode to run and debug.
 
 ## Credits
 
-- App icon by [Freepik](https://www.flaticon.com)
 - Update framework: [Sparkle](https://sparkle-project.org)
 - Anonymous analytics: [TelemetryDeck](https://telemetrydeck.com)
 

@@ -42,8 +42,14 @@ class ProximityMonitor: ObservableObject {
     @Published var bluetoothState: CBManagerState = .unknown
     @Published var selectedDeviceName: String? {
         didSet {
+            guard oldValue != selectedDeviceName else { return }
             UserDefaults.standard.set(selectedDeviceName, forKey: "selectedDeviceName")
             bleManager?.selectedDeviceName = selectedDeviceName
+            // Drop any lingering RSSI samples from the previous device so the smoothed
+            // average isn't polluted when the new device's signal starts flowing in.
+            rssiBuffer.removeAll()
+            cancelPendingTimers()
+            proximityState = .unknown
             if selectedDeviceName != nil { TelemetryService.deviceSelected() }
         }
     }
@@ -103,6 +109,7 @@ class ProximityMonitor: ObservableObject {
                     self?.isPhoneDetected = false
                     self?.proximityState = .unknown
                     self?.cancelPendingTimers()
+                    self?.rssiBuffer.removeAll()
                 }
             }
         )

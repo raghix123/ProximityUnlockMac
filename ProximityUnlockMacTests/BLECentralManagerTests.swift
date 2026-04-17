@@ -101,8 +101,6 @@ final class BLECentralManagerTests: XCTestCase {
         mockCentral.reset()
         XCTAssertFalse(mockCentral.scanForPeripheralsCalled)
         XCTAssertFalse(mockCentral.stopScanCalled)
-        XCTAssertFalse(mockCentral.connectCalled)
-        XCTAssertFalse(mockCentral.cancelPeripheralConnectionCalled)
     }
 
     // MARK: - Disconnect Handling
