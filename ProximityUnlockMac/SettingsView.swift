@@ -134,11 +134,11 @@ struct SettingsView: View {
             }
 
             Section("Telemetry") {
-                Toggle("Share anonymous usage data", isOn: Binding(
+                Toggle("Share anonymous usage data (recommended)", isOn: Binding(
                     get: { TelemetryService.isEnabled },
                     set: { TelemetryService.setEnabled($0) }
                 ))
-                Text("Sends anonymous events (app launches, lock/unlock counts) to help improve the app. No device names, passwords, or personal information are ever collected.")
+                Text("Anonymous events (like app launches and lock/unlock counts) are sent by default to help improve the app. No device names, passwords, or personal information are ever collected. You can turn this off at any time.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

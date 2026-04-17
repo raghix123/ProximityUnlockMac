@@ -4,7 +4,7 @@
   <p><strong>Lock your Mac when you walk away. Unlock it when you come back.</strong></p>
   <p>
     <img src="https://img.shields.io/badge/macOS-26.2%2B-blue" alt="macOS 26.2+" />
-    <a href="https://github.com/raghix123/ProximityUnlockMac/releases/latest"><img src="https://img.shields.io/github/v/release/raghix123/ProximityUnlockMac?include_prereleases&sort=semver" alt="Latest release" /></a>
+    <a href="https://github.com/raghix123/ProximityUnlock/releases/latest"><img src="https://img.shields.io/github/v/release/raghix123/ProximityUnlock?include_prereleases&sort=semver" alt="Latest release" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT license" /></a>
   </p>
 </div>
@@ -32,7 +32,7 @@ Your iPhone broadcasts a BLE advertisement that's unique and stable once paired 
 
 ## Install
 
-1. Download the latest `ProximityUnlock-<version>.dmg` from the [Releases page](https://github.com/raghix123/ProximityUnlockMac/releases).
+1. Download the latest `ProximityUnlock-<version>.dmg` from the [Releases page](https://github.com/raghix123/ProximityUnlock/releases).
 2. Open the DMG and drag **ProximityUnlock** into the Applications folder.
 3. Launch it. Onboarding walks you through device selection, Accessibility permission, and saving your login password.
 
@@ -52,7 +52,7 @@ You only need to do this once. Sparkle updates won't re-trigger the warning.
 ## Build from source
 
 ```bash
-git clone https://github.com/raghix123/ProximityUnlockMac
+git clone https://github.com/raghix123/ProximityUnlock
 cd ProximityUnlockMac
 xcodebuild -scheme ProximityUnlockMac -destination 'platform=macOS' build
 ```

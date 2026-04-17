@@ -9,6 +9,8 @@ enum TelemetryService {
     private static let appID = "14838AA9-45A6-4C7D-8EF0-FA51897AACDE"
     private static var didStart = false
 
+    /// Telemetry is enabled by default (opt-out model).
+    /// Users can disable telemetry in Settings → About.
     static var isEnabled: Bool {
         get { UserDefaults.standard.object(forKey: "telemetryEnabled") as? Bool ?? true }
         set { UserDefaults.standard.set(newValue, forKey: "telemetryEnabled") }

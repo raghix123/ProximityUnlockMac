@@ -23,7 +23,7 @@
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Raghav Bodicherla. Open source — see README for details.</string>
 	<key>SUFeedURL</key>
-	<string>https://raghix123.github.io/ProximityUnlockMac/appcast.xml</string>
+	<string>https://raghix123.github.io/ProximityUnlock/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>eNPcOg3/wLJ3503ecivsKkIXs7rAaWKAy7OBkpG1jt0=</string>
 	<key>SUEnableAutomaticChecks</key>

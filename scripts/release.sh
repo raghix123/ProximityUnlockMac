@@ -43,7 +43,7 @@ ZIP_PATH="$UPDATES_DIR/$ZIP_NAME"
 DMG_NAME="ProximityUnlock-${VERSION}.dmg"
 DMG_PATH="$REPO_ROOT/build/$DMG_NAME"
 TAG="v${VERSION}"
-DOWNLOAD_URL="https://github.com/raghix123/ProximityUnlockMac/releases/download/${TAG}/${ZIP_NAME}"
+DOWNLOAD_URL="https://github.com/raghix123/ProximityUnlock/releases/download/${TAG}/${ZIP_NAME}"
 
 mkdir -p "$UPDATES_DIR" "$REPO_ROOT/build"
 
@@ -134,13 +134,13 @@ fi
 
 if [[ -n "$IS_BETA" ]]; then
     "$GENERATE_APPCAST" "$UPDATES_DIR" \
-        --download-url-prefix "https://github.com/raghix123/ProximityUnlockMac/releases/download/${TAG}/" \
+        --download-url-prefix "https://github.com/raghix123/ProximityUnlock/releases/download/${TAG}/" \
         --channel beta \
         -o "$UPDATES_DIR/appcast-beta.xml"
     cp "$UPDATES_DIR/appcast-beta.xml" "$REPO_ROOT/docs/appcast-beta.xml"
 else
     "$GENERATE_APPCAST" "$UPDATES_DIR" \
-        --download-url-prefix "https://github.com/raghix123/ProximityUnlockMac/releases/download/${TAG}/" \
+        --download-url-prefix "https://github.com/raghix123/ProximityUnlock/releases/download/${TAG}/" \
         -o "$UPDATES_DIR/appcast.xml"
     cp "$UPDATES_DIR/appcast.xml" "$REPO_ROOT/docs/appcast.xml"
 fi
@@ -165,4 +165,4 @@ gh release create "$TAG" "$ZIP_PATH" "$DMG_PATH" \
 echo ""
 echo "✅  Released $TAG"
 echo "   Appcast: https://raghix123.github.io/ProximityUnlockMac/appcast.xml"
-echo "   Release: https://github.com/raghix123/ProximityUnlockMac/releases/tag/${TAG}"
+echo "   Release: https://github.com/raghix123/ProximityUnlock/releases/tag/${TAG}"
