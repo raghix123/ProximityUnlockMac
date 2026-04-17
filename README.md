@@ -36,8 +36,6 @@ Your iPhone broadcasts a BLE advertisement that's unique and stable once paired 
 2. Open the DMG and drag **ProximityUnlock** into the Applications folder.
 3. Launch it. Onboarding walks you through device selection, Accessibility permission, and saving your login password.
 
-Prefer a `.zip`? It's on the same release page and contains the same app.
-
 ### First-launch warning (pre-notarization builds)
 
 Until the app is notarized by Apple, macOS Gatekeeper may block the first launch with a "cannot be opened" or "can't be verified" dialog. Here's how to get past it — no terminal required:

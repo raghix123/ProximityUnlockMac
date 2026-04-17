@@ -38,12 +38,15 @@ ARCHIVE_PATH="$REPO_ROOT/build/ProximityUnlock.xcarchive"
 EXPORT_PATH="$REPO_ROOT/build/export"
 APP_PATH="$EXPORT_PATH/ProximityUnlock.app"
 UPDATES_DIR="$REPO_ROOT/updates"
+# Temp zip — submitted to Apple's notary service only, never shipped.
 ZIP_NAME="ProximityUnlock-${VERSION}.zip"
-ZIP_PATH="$UPDATES_DIR/$ZIP_NAME"
+ZIP_PATH="$REPO_ROOT/build/$ZIP_NAME"
+# DMG — the user-facing install artifact AND the Sparkle appcast enclosure.
+# Lives in updates/ so generate_appcast indexes it on each release.
 DMG_NAME="ProximityUnlock-${VERSION}.dmg"
-DMG_PATH="$REPO_ROOT/build/$DMG_NAME"
+DMG_PATH="$UPDATES_DIR/$DMG_NAME"
 TAG="v${VERSION}"
-DOWNLOAD_URL="https://github.com/raghix123/ProximityUnlock/releases/download/${TAG}/${ZIP_NAME}"
+DOWNLOAD_URL="https://github.com/raghix123/ProximityUnlock/releases/download/${TAG}/${DMG_NAME}"
 
 mkdir -p "$UPDATES_DIR" "$REPO_ROOT/build"
 
@@ -84,22 +87,19 @@ xcodebuild -exportArchive \
     -exportPath "$EXPORT_PATH" \
     | xcpretty 2>/dev/null || true
 
-echo "▶ Zipping for notarization..."
-ditto -c -k --keepParent "$APP_PATH" "$ZIP_PATH"
-
 # Notarize + staple so Gatekeeper doesn't warn users on first launch.
 # Requires a one-time: xcrun notarytool store-credentials AC_NOTARY \
 #     --apple-id <you@icloud.com> --team-id <TEAMID> --password <app-specific-pw>
 # Set SKIP_NOTARIZE=1 in the env if you want to ship without notarization (not recommended).
 NOTARY_PROFILE="${NOTARY_PROFILE:-AC_NOTARY}"
 if [[ -z "${SKIP_NOTARIZE:-}" ]]; then
+    echo "▶ Zipping app for notary submission..."
+    ditto -c -k --keepParent "$APP_PATH" "$ZIP_PATH"
     echo "▶ Submitting to Apple notary service (profile: $NOTARY_PROFILE)..."
     xcrun notarytool submit "$ZIP_PATH" --keychain-profile "$NOTARY_PROFILE" --wait
     echo "▶ Stapling ticket onto app..."
     xcrun stapler staple "$APP_PATH"
-    echo "▶ Re-zipping with stapled ticket..."
-    rm -f "$ZIP_PATH"
-    ditto -c -k --keepParent "$APP_PATH" "$ZIP_PATH"
+    rm -f "$ZIP_PATH"  # Temp zip — DMG below is the shipped artifact.
 else
     echo "⚠  SKIP_NOTARIZE=1 — shipping un-notarized build. Gatekeeper will warn users."
 fi
@@ -197,7 +197,7 @@ if [[ -n "$IS_BETA" ]]; then
     RELEASE_FLAGS="--prerelease"
 fi
 
-gh release create "$TAG" "$ZIP_PATH" "$DMG_PATH" \
+gh release create "$TAG" "$DMG_PATH" \
     --title "$TAG" \
     --notes "$NOTES" \
     $RELEASE_FLAGS
