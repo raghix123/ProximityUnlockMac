@@ -108,9 +108,11 @@ echo "▶ Building DMG..."
 DMG_STAGING="$REPO_ROOT/build/dmg-staging"
 DMG_TMP="$REPO_ROOT/build/ProximityUnlock-tmp.dmg"
 DMG_MOUNT="/Volumes/ProximityUnlock"
+DMG_BACKGROUND="$REPO_ROOT/scripts/dmg-background.tiff"
 rm -rf "$DMG_STAGING" "$DMG_TMP" "$DMG_PATH"
-mkdir -p "$DMG_STAGING"
+mkdir -p "$DMG_STAGING/.background"
 cp -R "$APP_PATH" "$DMG_STAGING/"
+cp "$DMG_BACKGROUND" "$DMG_STAGING/.background/background.tiff"
 ln -s /Applications "$DMG_STAGING/Applications"
 
 # Step 1 — build a read-write DMG we can decorate.
@@ -121,8 +123,9 @@ hdiutil create \
     -ov \
     "$DMG_TMP"
 
-# Step 2 — mount, drive Finder via AppleScript to place icons + size the window,
-# then detach. Requires Automation permission for the shell (Terminal prompts once).
+# Step 2 — mount, drive Finder via AppleScript to set the background picture,
+# icon view options, and icon positions. Requires Automation permission for
+# the shell (Terminal prompts once per machine).
 hdiutil attach "$DMG_TMP" -noverify -noautoopen -mountpoint "$DMG_MOUNT"
 
 osascript <<OSA
@@ -137,6 +140,7 @@ tell application "Finder"
         set viewOptions to the icon view options of container window
         set arrangement of viewOptions to not arranged
         set icon size of viewOptions to 128
+        set background picture of viewOptions to file ".background:background.tiff"
         set position of item "ProximityUnlock.app" of container window to {140, 180}
         set position of item "Applications" of container window to {400, 180}
         close
