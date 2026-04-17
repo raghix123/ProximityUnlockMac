@@ -14,7 +14,7 @@ A macOS menu-bar app that uses Bluetooth Low Energy to sense your paired iPhone 
 ## Features
 
 - **Hands-free lock and unlock** — cross your "far" threshold, Mac locks; cross "near," it wakes and types your password.
-- **100% on-device** — BLE only. No iOS app, no account, no network calls, no telemetry by default.
+- **100% on-device** — BLE only. No iOS app, no account, no network calls, and opt-out telemetry data.
 - **Tunable sensitivity** — separate near/far thresholds with a deliberate dead zone so you don't get flicker at the edge.
 - **Auto-updates** via Sparkle with EdDSA signatures.
 - **Menu bar only** — no dock icon, no Login Items clutter.
