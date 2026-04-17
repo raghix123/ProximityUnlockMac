@@ -10,6 +10,7 @@ class BLECentralManager: NSObject, BLECentralManaging {
 
     private var central: CBCentralManagerProtocol!
     private var pruneTimer: Timer?
+    private var wakeObserver: NSObjectProtocol?
 
     // MARK: - Device list
 
@@ -18,6 +19,10 @@ class BLECentralManager: NSObject, BLECentralManaging {
 
     /// Called whenever the set of discovered devices changes (new device or stale removed).
     var onDiscoveredDevicesChanged: (([DiscoveredDevice]) -> Void)?
+
+    /// Called when the underlying CBManager state changes (on/off/unauthorized/etc.)
+    /// so the UI can tell the user to enable Bluetooth or grant permission.
+    var onStateChange: ((CBManagerState) -> Void)?
 
     // MARK: - Selection (in-memory; ProximityMonitor owns UserDefaults persistence)
 
@@ -74,13 +79,18 @@ class BLECentralManager: NSObject, BLECentralManaging {
             self?.pruneStaleDevices()
         }
 
-        NotificationCenter.default.addObserver(
+        wakeObserver = NotificationCenter.default.addObserver(
             forName: NSWorkspace.didWakeNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
             self?.startScanning()
         }
+    }
+
+    deinit {
+        pruneTimer?.invalidate()
+        if let obs = wakeObserver { NotificationCenter.default.removeObserver(obs) }
     }
 
     // MARK: - Internal
@@ -137,6 +147,7 @@ extension BLECentralManager: CBCentralManagerDelegate {
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         Log.ble.info("Central manager state: \(String(describing: central.state.rawValue), privacy: .public)")
+        onStateChange?(central.state)
         if central.state == .poweredOn {
             startScanning()
         }

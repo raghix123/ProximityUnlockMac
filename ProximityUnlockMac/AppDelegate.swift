@@ -22,7 +22,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         Log.ui.info("App launched")
         TelemetryService.start()
-        TelemetryService.appLaunched()
+        TelemetryService.appLaunched(nearThreshold: proximityMonitor.nearThreshold, farThreshold: proximityMonitor.farThreshold)
 
         // Show onboarding on first launch
         if !hasCompletedOnboarding {

@@ -7,6 +7,7 @@ import TelemetryClient
 enum TelemetryService {
 
     private static let appID = "14838AA9-45A6-4C7D-8EF0-FA51897AACDE"
+    private static var didStart = false
 
     static var isEnabled: Bool {
         get { UserDefaults.standard.object(forKey: "telemetryEnabled") as? Bool ?? true }
@@ -14,6 +15,8 @@ enum TelemetryService {
     }
 
     static func start() {
+        guard !didStart else { return }
+        didStart = true
         var config = TelemetryManagerConfiguration(appID: appID)
         config.analyticsDisabled = !isEnabled
         TelemetryManager.initialize(with: config)
@@ -21,13 +24,18 @@ enum TelemetryService {
 
     static func signal(_ name: String, parameters: [String: String] = [:]) {
         guard isEnabled else { return }
+        start()  // Lazy init: signals from object initializers can fire before AppDelegate.
         TelemetryManager.send(name, with: parameters)
     }
 
     // MARK: - Named events
 
-    static func appLaunched() {
-        signal("app.launched")
+    static func appLaunched(nearThreshold: Int, farThreshold: Int) {
+        let bucket = { (v: Int) in String(Int((Double(v) / 5.0).rounded() * 5)) }
+        signal("app.launched", parameters: [
+            "near_dbm": bucket(nearThreshold),
+            "far_dbm":  bucket(farThreshold)
+        ])
     }
 
     static func proximityLocked() {
@@ -50,15 +58,26 @@ enum TelemetryService {
         signal("update.check", parameters: ["manual": manual ? "true" : "false"])
     }
 
+    /// Called when the user finishes adjusting a threshold slider.
+    /// Values are bucketed to 5 dBm to avoid over-precision.
+    static func thresholdChanged(near nearThreshold: Int, far farThreshold: Int) {
+        let bucket = { (v: Int) in String(Int((Double(v) / 5.0).rounded() * 5)) }
+        signal("threshold.changed", parameters: [
+            "near_dbm": bucket(nearThreshold),
+            "far_dbm":  bucket(farThreshold)
+        ])
+    }
+
     static func onboardingCompleted() {
         signal("onboarding.completed")
     }
 
     static func setEnabled(_ enabled: Bool) {
         isEnabled = enabled
-        // Inform TelemetryDeck of the opt-out so it stops queuing signals.
+        // Re-initialize so TelemetryDeck picks up the new analyticsDisabled flag.
         var config = TelemetryManagerConfiguration(appID: appID)
         config.analyticsDisabled = !enabled
         TelemetryManager.initialize(with: config)
+        didStart = true
     }
 }

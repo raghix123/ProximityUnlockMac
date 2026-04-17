@@ -95,7 +95,8 @@ class UnlockManager {
             // locks on macOS 26, so we can't rely on it alone for state tracking.
             _isScreenLocked = true
         } else {
-            Log.unlock.warning("SACLockScreenImmediate unavailable, falling back to pmset")
+            let err = dlerror().map { String(cString: $0) } ?? "unknown error"
+            Log.unlock.warning("SACLockScreenImmediate unavailable (\(err, privacy: .public)), falling back to pmset")
             let task = Process()
             task.launchPath = "/usr/bin/pmset"
             task.arguments = ["displaysleepnow"]

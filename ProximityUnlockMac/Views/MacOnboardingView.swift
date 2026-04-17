@@ -438,13 +438,14 @@ private struct Step3Accessibility: View {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         AXIsProcessTrustedWithOptions(options)
 
-        // Restore floating level when the user returns to the app.
-        NotificationCenter.default.addObserver(
-            forName: NSApplication.didBecomeActiveNotification,
-            object: nil,
-            queue: .main
-        ) { _ in
-            floatingWindows.forEach { $0.level = .floating }
+        // One-shot: restore floating level when the user returns to the app.
+        // prefix(1) ends the sequence after the first notification — no manual removal needed.
+        Task { @MainActor in
+            for await _ in NotificationCenter.default
+                .notifications(named: NSApplication.didBecomeActiveNotification)
+                .prefix(1) {
+                floatingWindows.forEach { $0.level = .floating }
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import CoreBluetooth
 import os
 
 enum ProximityState: CustomStringConvertible {
@@ -38,6 +39,7 @@ class ProximityMonitor: ObservableObject {
         didSet { debouncedSaveThresholds() }
     }
     @Published var discoveredDevices: [DiscoveredDevice] = []
+    @Published var bluetoothState: CBManagerState = .unknown
     @Published var selectedDeviceName: String? {
         didSet {
             UserDefaults.standard.set(selectedDeviceName, forKey: "selectedDeviceName")
@@ -65,9 +67,10 @@ class ProximityMonitor: ObservableObject {
             guard let self else { return }
             UserDefaults.standard.set(self.nearThreshold, forKey: "nearThreshold")
             UserDefaults.standard.set(self.farThreshold, forKey: "farThreshold")
+            TelemetryService.thresholdChanged(near: self.nearThreshold, far: self.farThreshold)
         }
         thresholdSaveWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
     }
 
     var statusDescription: String {
@@ -103,6 +106,9 @@ class ProximityMonitor: ObservableObject {
         )
         ble.onDiscoveredDevicesChanged = { [weak self] devices in
             Task { @MainActor [weak self] in self?.discoveredDevices = devices }
+        }
+        ble.onStateChange = { [weak self] state in
+            Task { @MainActor [weak self] in self?.bluetoothState = state }
         }
         // Sync the persisted selection into the BLE manager (didSet doesn't fire in init).
         ble.selectedDeviceName = selectedDeviceName

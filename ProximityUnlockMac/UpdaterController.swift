@@ -14,11 +14,7 @@ final class UpdaterController: NSObject, ObservableObject {
             userDriverDelegate: nil
         )
         c.updater.automaticallyChecksForUpdates = self.automaticUpdateChecks
-        do {
-            try c.startUpdater()
-        } catch {
-            Log.ui.error("Sparkle updater failed to start: \(error, privacy: .public)")
-        }
+        c.startUpdater()
         return c
     }()
 

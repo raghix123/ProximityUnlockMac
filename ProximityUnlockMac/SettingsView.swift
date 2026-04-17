@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import CoreBluetooth
 
 struct SettingsView: View {
     @EnvironmentObject var monitor: ProximityMonitor
@@ -39,7 +40,10 @@ struct SettingsView: View {
     @ViewBuilder private var generalTab: some View {
         Form {
             Section("Your iPhone") {
-                if monitor.discoveredDevices.isEmpty {
+                if let issue = bluetoothIssueMessage {
+                    Label(issue, systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                } else if monitor.discoveredDevices.isEmpty {
                     HStack(spacing: 8) {
                         ProgressView().scaleEffect(0.7)
                         Text("Scanning for Bluetooth devices…")
@@ -111,6 +115,16 @@ struct SettingsView: View {
                     )
                 }
                 Text("-50 dBm ≈ very close (< 1 m)   ·   -100 dBm ≈ far (> 8 m)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Telemetry") {
+                Toggle("Share anonymous usage data", isOn: Binding(
+                    get: { TelemetryService.isEnabled },
+                    set: { TelemetryService.setEnabled($0) }
+                ))
+                Text("Sends anonymous events (app launches, lock/unlock counts) to help improve the app. No device names, passwords, or personal information are ever collected.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -245,21 +259,21 @@ struct SettingsView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
-
-            Section("Privacy") {
-                Toggle("Share anonymous usage data", isOn: Binding(
-                    get: { TelemetryService.isEnabled },
-                    set: { TelemetryService.setEnabled($0) }
-                ))
-                Text("Sends anonymous events (app launches, lock/unlock counts) to help improve the app. No device names, passwords, or personal information are ever collected.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
         }
         .formStyle(.grouped)
     }
 
     // MARK: - Helpers
+
+    private var bluetoothIssueMessage: String? {
+        switch monitor.bluetoothState {
+        case .poweredOn, .unknown, .resetting: return nil
+        case .poweredOff:   return "Bluetooth is off. Turn it on in Control Center."
+        case .unauthorized: return "Bluetooth permission denied. Grant access in System Settings → Privacy & Security → Bluetooth."
+        case .unsupported:  return "This Mac does not support Bluetooth Low Energy."
+        @unknown default:   return nil
+        }
+    }
 
     private var proximityLabel: String {
         switch monitor.proximityState {
