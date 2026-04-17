@@ -36,10 +36,12 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SCHEME="ProximityUnlockMac"
 ARCHIVE_PATH="$REPO_ROOT/build/ProximityUnlock.xcarchive"
 EXPORT_PATH="$REPO_ROOT/build/export"
-APP_PATH="$EXPORT_PATH/ProximityUnlockMac.app"
+APP_PATH="$EXPORT_PATH/ProximityUnlock.app"
 UPDATES_DIR="$REPO_ROOT/updates"
 ZIP_NAME="ProximityUnlock-${VERSION}.zip"
 ZIP_PATH="$UPDATES_DIR/$ZIP_NAME"
+DMG_NAME="ProximityUnlock-${VERSION}.dmg"
+DMG_PATH="$REPO_ROOT/build/$DMG_NAME"
 TAG="v${VERSION}"
 DOWNLOAD_URL="https://github.com/raghix123/ProximityUnlockMac/releases/download/${TAG}/${ZIP_NAME}"
 
@@ -102,6 +104,26 @@ else
     echo "⚠  SKIP_NOTARIZE=1 — shipping un-notarized build. Gatekeeper will warn users."
 fi
 
+echo "▶ Building DMG..."
+DMG_STAGING="$REPO_ROOT/build/dmg-staging"
+rm -rf "$DMG_STAGING"
+mkdir -p "$DMG_STAGING"
+cp -R "$APP_PATH" "$DMG_STAGING/"
+ln -s /Applications "$DMG_STAGING/Applications"
+rm -f "$DMG_PATH"
+hdiutil create \
+    -volname "ProximityUnlock" \
+    -srcfolder "$DMG_STAGING" \
+    -ov -format UDZO \
+    "$DMG_PATH"
+rm -rf "$DMG_STAGING"
+
+if [[ -z "${SKIP_NOTARIZE:-}" ]]; then
+    echo "▶ Notarizing DMG..."
+    xcrun notarytool submit "$DMG_PATH" --keychain-profile "$NOTARY_PROFILE" --wait
+    xcrun stapler staple "$DMG_PATH"
+fi
+
 echo "▶ Signing with EdDSA + regenerating appcast..."
 DERIVED_DATA="${HOME}/Library/Developer/Xcode/DerivedData"
 GENERATE_APPCAST=$(find "$DERIVED_DATA" -name "generate_appcast" -path "*/Sparkle*" 2>/dev/null | head -1)
@@ -135,7 +157,7 @@ if [[ -n "$IS_BETA" ]]; then
     RELEASE_FLAGS="--prerelease"
 fi
 
-gh release create "$TAG" "$ZIP_PATH" \
+gh release create "$TAG" "$ZIP_PATH" "$DMG_PATH" \
     --title "$TAG" \
     --notes "$NOTES" \
     $RELEASE_FLAGS
